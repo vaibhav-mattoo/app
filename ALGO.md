@@ -9,10 +9,14 @@
   - frequency
   - length
   - score
-- Based on the number of occurances of commands exceeding some big constant, to prevent integer overflows or overtraining we divide all scores by some constant and if the new scores for some commands falls below some limit then we remove it from the suggestions list.
+- Based on the number of occurances of commands exceeding some big constant, to prevent integer overflows or over-training we divide all scores by some constant and if the new scores for some commands falls below some limit then we remove it from the suggestions list.
 - let user pick the alias, later might have learning based system to suggest an alias, need to ensure that the alias does not already exist or clash with another command.
 - Need to initialize with some set of common aliases.
 - Need a TUI and a CLI for the app.
 - Modes needed for adding, already available aliases (where we can delete aliases).
-- Have an option to delete suggestion so that same suggestion isnt brought up again
-- If we use a set then sort based on the score
+- Once the user enters an alias we remove the command entry from the data structure.
+- We want to remove recursive aliasing by checking while storing if the thing we are storing is an alias already present in the data structure, then resolve it before storing it in the data structure.
+- Need to adjust the threshold so that prefix which is small but commonly used shows up in the suggestion list.
+- A prefix which has multiple words or tags should have more preference over the prefixes with single word, done by possibly adding a reward for spaces in the scoring mechanism.
+- Want a way to not show up deleted suggestions again, maintain a seperate set to have deleted suggestions so that on next command nvim it is not added to the database.
+
