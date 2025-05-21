@@ -15,3 +15,4 @@
 - Need a TUI and a CLI for the app.
 - Modes needed for adding, already available aliases (where we can delete aliases).
 - Have an option to delete suggestion so that same suggestion isnt brought up again
+- If we use a set then sort based on the score
