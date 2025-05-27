@@ -8,8 +8,8 @@ pub struct Database {
 }
 
 #[derive(Debug)]
-pub struct deleted_commands {
-    deleted_commands: BTreeSet<Command>,
+pub struct Deleted_Commands {
+    deleted_commands: BTreeSet<String>,
 }
 
 #[derive(Debug)]
@@ -23,6 +23,6 @@ pub struct Command {
     frequency: i32,
     length: i16,
     score: i8,
-    command_text: &str,
+    command_text: String,
     number_of_words: i8,
 }
