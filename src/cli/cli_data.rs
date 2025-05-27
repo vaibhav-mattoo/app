@@ -20,6 +20,9 @@ pub enum Operation {
     Remove { alias: String },
     List,
     Change { alias: String },
-    GetSuggestions { alias: String },
+    GetSuggestions {
+        #[arg(short = 't', long)]
+        alias_type: Option<i8>,
+    },
     DeleteSuggestion { alias: String },
 }

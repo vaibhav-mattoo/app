@@ -53,17 +53,24 @@ impl Database {
     pub fn get_top_commands(&self, n: Option<usize>) -> Vec<&Command> {
         // will be sorted by score, get top n
         let n = n.unwrap_or(10);
+        println!("working");
         self.command_list.iter().take(n).collect()
     }
 
     pub fn get_total_score(&self) -> i64 {
         self.total_score
     }
+
+    pub fn score_reset(&self){
+        //iterate through the set and reduce the score of each string by 90%
+    }
+
 }
 
 impl Command {
     pub fn new(command_text: String) -> Self {
-        let length = command_text.len() as i16;
+        let length: i16 = command_text.split_whitespace().map(|s| s.len()).sum::<usize>() as i16;
+        //map transforms the strings into their lengths
         let number_of_words = command_text.split_whitespace().count() as i8;
         let frequency = 1;
         let last_access_time = 0; // or set as needed
