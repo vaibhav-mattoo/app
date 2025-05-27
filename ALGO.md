@@ -20,3 +20,4 @@
 - A prefix which has multiple words or tags should have more preference over the prefixes with single word, done by possibly adding a reward for spaces in the scoring mechanism.
 - Want a way to not show up deleted suggestions again, maintain a seperate set to have deleted suggestions so that on next command nvim it is not added to the database.
 - add option to change file names
+- ignore spaces inside double quotes or single quotes.

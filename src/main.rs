@@ -4,7 +4,6 @@ use cli::arg_handler::parse_args;
 use cli::cli_data::Operation;
 
 fn main() {
-    println!("Hello, world!");
     let cli = parse_args();
 
     match &cli.operation {
