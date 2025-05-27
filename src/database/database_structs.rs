@@ -1,30 +1,46 @@
 use std::collections:: {BTreeSet, HashMap};
-use std::cmp::Reverse;
+// use std::cmp::Reverse;
 
 #[derive(Debug)]
 pub struct Database {
-    command_list: BTreeSet<Reverse<Command>>,
-    reverse_command_map: HashMap<String, Command>,
-    total_num_commands: i32,
-    total_score: i64,
+    pub command_list: BTreeSet<Command>,
+    pub reverse_command_map: HashMap<String, Command>,
+    pub total_num_commands: i32,
+    pub total_score: i64,
 }
 
 #[derive(Debug)]
 pub struct Deleted_Commands {
-    deleted_commands: BTreeSet<String>,
+    pub deleted_commands: BTreeSet<String>,
 }
 
 #[derive(Debug)]
 pub struct Suggestions {
-    alias_suggestion: Vec<String>,
+    pub alias_suggestion: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Command {
-    score: i32,
-    last_access_time: i64,
-    frequency: i32,
-    length: i16,
-    command_text: String,
-    number_of_words: i8,
+    pub score: i32,
+    pub last_access_time: i64,
+    pub frequency: i32,
+    pub length: i16,
+    pub command_text: String,
+    pub number_of_words: i8,
+}
+
+impl Ord for Command {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // Sort by score descending
+        match other.score.cmp(&self.score) {
+            std::cmp::Ordering::Equal => self.command_text.cmp(&other.command_text), // tie-breaker
+            ord => ord,
+        }
+    }
+}
+
+impl PartialOrd for Command {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
