@@ -21,8 +21,8 @@ pub enum Operation {
     List,
     Change { alias: String },
     GetSuggestions {
-        // #[arg(short = 't', long)]
-        // alias_type: Option<i8>,
+        #[arg(short = 't', long)]
+        num: Option<usize>,
     },
     DeleteSuggestion { alias: String },
 }

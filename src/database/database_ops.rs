@@ -51,10 +51,11 @@ impl Database {
         }
     }
 
-    pub fn get_top_commands(&self, n: Option<usize>) -> Vec<&Command> {
+    pub fn get_top_commands(&mut self, n: Option<usize>) -> Vec<&Command> {
         // will be sorted by score, get top n
-        let n = n.unwrap_or(10);
-        println!("working");
+        // let n = n.unwrap_or(10);
+        // println!("working");
+        let n = n.unwrap_or(5);
         self.command_list.iter().take(n).collect()
     }
 
