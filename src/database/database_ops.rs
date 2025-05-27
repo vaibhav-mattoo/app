@@ -4,6 +4,8 @@ use super::database_structs::{Command, Database, Deleted_Commands};
 
 fn get_score(command: &Command) -> i32 {
     // Make a simple scoring func for now, just return the length
+    let x:f64=(command.length).powf(3.0/5.0);
+    
     command.length as i32 + command.frequency + command.number_of_words as i32
 }
 
@@ -48,8 +50,9 @@ impl Database {
         }
     }
 
-    pub fn get_top_commands(&self, n: usize) -> Vec<&Command> {
+    pub fn get_top_commands(&self, n: Option<usize>) -> Vec<&Command> {
         // will be sorted by score, get top n
+        let n = n.unwrap_or(10);
         self.command_list.iter().take(n).collect()
     }
 
