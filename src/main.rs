@@ -1,3 +1,4 @@
+extern crate clap;
 mod cli;
 mod ops;
 mod database;
