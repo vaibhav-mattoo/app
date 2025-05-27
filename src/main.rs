@@ -1,3 +1,4 @@
+extern crate clap;
 mod cli;
 
 use cli::arg_handler::parse_args;
