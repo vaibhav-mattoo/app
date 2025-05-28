@@ -1,12 +1,39 @@
+use core::time;
 // use std::collections::BTreeSet;
-
+use std::time::{SystemTime, UNIX_EPOCH};
 use super::database_structs::{Command, Database, Deleted_Commands};
 
 fn get_score(command: &Command) -> i32 {
     // Make a simple scoring func for now, just return the length
     // let x:f64=(command.length).powf(3.0/5.0);
+    let now = SystemTime::now();
+
+    match now.duration_since(UNIX_EPOCH) {
+        Ok(duration) => println!("UNIX timestamp: {}", duration.as_secs()),
+        Err(e) => eprintln!("Time error: {:?}", e),
+    }
+    let current_time = now.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
+    let time_difference = current_time - command.last_access_time;
+    let mut mult: f64 =1.0;
+    if time_difference<=3600{
+        mult=4.0;
+    }
+    else if time_difference<=86400{
+        mult=2.0;
+    }
+    else if time_difference<=604800{
+        mult=0.5;
+    }
+    else{
+        mult=0.25;
+    }
+    let length = command.length as f64;
+    let frequency = command.frequency as f64;
+    let word_length = command.number_of_words as f64;
+
+    (mult * length.powf(3.0 / 5.0) * frequency  * word_length) as i32
     
-    command.length as i32 + command.frequency + command.number_of_words as i32
+    
 }
 
 impl Database {
@@ -63,8 +90,11 @@ impl Database {
         self.total_score
     }
 
-    pub fn score_reset(&self){
+    pub fn score_reset(&mut self){
         //iterate through the set and reduce the score of each string by 90%
+        for value in self.reverse_command_map.values_mut() {
+            value.score = (value.score as f32 * 0.9).round() as i32;
+        }
     }
 
 }
