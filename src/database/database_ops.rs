@@ -1,4 +1,4 @@
-use core::time;
+// use core::time;
 // use std::collections::BTreeSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 use super::database_structs::{Command, Database, Deleted_Commands};
@@ -8,12 +8,13 @@ fn get_score(command: &Command) -> i32 {
     // let x:f64=(command.length).powf(3.0/5.0);
     let now = SystemTime::now();
 
-    match now.duration_since(UNIX_EPOCH) {
-        Ok(duration) => println!("UNIX timestamp: {}", duration.as_secs()),
-        Err(e) => eprintln!("Time error: {:?}", e),
-    }
-    let current_time = now.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
-    let time_difference = current_time - command.last_access_time;
+    // match now.duration_since(UNIX_EPOCH) {
+    //     // Ok(duration) => {},
+    //     Ok(duration) => println!("UNIX timestamp: {}", duration.as_secs()),
+    //     Err(e) => eprintln!("Time error: {:?}", e),
+    // }
+    let current_time: i64 = now.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
+    let time_difference: i64 = current_time - command.last_access_time;
     let mut mult: f64 =1.0;
     if time_difference<=3600{
         mult=4.0;
@@ -29,9 +30,8 @@ fn get_score(command: &Command) -> i32 {
     }
     let length = command.length as f64;
     let frequency = command.frequency as f64;
-    let word_length = command.number_of_words as f64;
 
-    (mult * length.powf(3.0 / 5.0) * frequency  * word_length) as i32
+    (mult * length.powf(3.0 / 5.0) * frequency) as i32
     
     
 }
@@ -51,7 +51,7 @@ impl Database {
                 self.command_list.insert(updated_command.clone());
                 self.reverse_command_map.insert(command_str, updated_command);
             } else {
-                let new_command = Command::new(command_str.clone());
+                let new_command: Command = Command::new(command_str.clone());
                 self.command_list.insert(new_command.clone());
                 self.reverse_command_map.insert(command_str.clone(), new_command);
                 self.total_num_commands += 1;
@@ -103,9 +103,10 @@ impl Command {
     pub fn new(command_text: String) -> Self {
         let length: i16 = command_text.split_whitespace().map(|s| s.len()).sum::<usize>() as i16;
         //map transforms the strings into their lengths
-        let number_of_words = command_text.split_whitespace().count() as i8;
-        let frequency = 1;
-        let last_access_time = 0; // or set as needed
+        let number_of_words: i8 = command_text.split_whitespace().count() as i8;
+        let frequency: i32 = 1;
+        let now = SystemTime::now();
+        let last_access_time: i64 = now.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64; // or set as needed
 
         // Create a temporary Command to calculate the score
         let temp_command = Command {
@@ -130,7 +131,8 @@ impl Command {
     }
     pub fn update(&mut self) {
         // here we update the last_access time, frequency, and score
-        self.last_access_time = 0; // placeholder
+        let now = SystemTime::now();
+        self.last_access_time = now.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64; // placeholder
         self.frequency += 1;
         self.score = get_score(self);
     }

@@ -23,7 +23,14 @@ fn main() {
     };
     let dc_ref: &mut Deleted_Commands = &mut deleted_commands;
 
-    db_ref.add_command("example command".to_string(), &dc_ref);
+    insert_command("example command".to_string(), db_ref, dc_ref);
+    insert_command("example command lil big".to_string(), db_ref, dc_ref);
+    insert_command("example command".to_string(), db_ref, dc_ref);
+    // insert_command("HI".to_string(), db_ref, dc_ref);
+    // insert_command("BI".to_string(), db_ref, dc_ref);
+    // insert_command("BI".to_string(), db_ref, dc_ref);
+    // insert_command("HI".to_string(), db_ref, dc_ref);
+
 
     match &cli.operation {
         Operation::Add { alias } => {
