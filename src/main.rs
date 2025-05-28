@@ -8,6 +8,7 @@ use ops::get_suggestions::{get_suggestions};
 use ops::insert_command::insert_command;
 use ops::delete_suggestion::delete_suggestion;
 use database::database_structs::{Database, Deleted_Commands};
+use ops::alias_ops::{get_aliases_list, add_alias, remove_alias};
 
 fn main() {
     let cli = parse_args();
@@ -23,13 +24,16 @@ fn main() {
     };
     let dc_ref: &mut Deleted_Commands = &mut deleted_commands;
 
+    let file_path = "./store.aliases";
+
     insert_command("example command".to_string(), db_ref, dc_ref);
+    // delete_suggestion("example", db_ref, dc_ref);
     insert_command("example command lil big".to_string(), db_ref, dc_ref);
     insert_command("example command".to_string(), db_ref, dc_ref);
-    // insert_command("HI".to_string(), db_ref, dc_ref);
-    // insert_command("BI".to_string(), db_ref, dc_ref);
-    // insert_command("BI".to_string(), db_ref, dc_ref);
-    // insert_command("HI".to_string(), db_ref, dc_ref);
+    insert_command("HI".to_string(), db_ref, dc_ref);
+    insert_command("BI".to_string(), db_ref, dc_ref);
+    insert_command("BI".to_string(), db_ref, dc_ref);
+    insert_command("HI".to_string(), db_ref, dc_ref);
 
 
     match &cli.operation {
@@ -37,12 +41,17 @@ fn main() {
             println!("alias added: {}", alias);
             println!("alias file: {:?}", cli.alias_file_path);
             println!("command list number: {}", cli.command_list_number);
+            println!("command: {}", cli.command);
+            add_alias(file_path, alias, cli.command.as_str());            
         }
         Operation::Remove { alias } => {
             println!("remove alias: {}", alias);
+            remove_alias(file_path, alias);
         }
         Operation::List => {
-            println!("list is called");
+            // println!("list is called");
+            let aliases = get_aliases_list(file_path);
+            println!("Aliases: {:?}", aliases);
         }
         Operation::Change { alias } => {
             println!("change alias called: {}", alias);

@@ -7,11 +7,14 @@ pub struct Cli {
     #[command(subcommand)]
     pub operation: Operation,
 
-    #[arg(short, long, default_value = ".bash_aliases")]
+    #[arg(short, long, default_value = "store.aliases")]
     pub alias_file_path: PathBuf,
 
     #[arg(short = 'n', long, default_value = "0")]
     pub command_list_number: u8,
+
+    #[arg (short = 'd', long, default_value = "test_command")]
+    pub command: String,
 }
 
 #[derive(Subcommand, Debug)]
