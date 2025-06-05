@@ -4,15 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use super::database_structs::{Command, Database, DeletedCommands};
 
 fn get_score(command: &Command) -> i32 {
-    // Make a simple scoring func for now, just return the length
-    // let x:f64=(command.length).powf(3.0/5.0);
     let now = SystemTime::now();
-
-    // match now.duration_since(UNIX_EPOCH) {
-    //     // Ok(duration) => {},
-    //     Ok(duration) => println!("UNIX timestamp: {}", duration.as_secs()),
-    //     Err(e) => eprintln!("Time error: {:?}", e),
-    // }
     let current_time: i64 = now.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
     let time_difference: i64 = current_time - command.last_access_time;
     let mult: f64;
@@ -87,6 +79,7 @@ impl Database {
     pub fn update_db (&mut self) {
         // we should iterate over the reverse_command_map and update each command using its update function
         // maybe also remove commands which have very low score, to be implemented later
+        // let threshold: i32 = 10000;
         let mut copy = self.reverse_command_map.clone();
         for (key, command) in copy.iter_mut() {
 
