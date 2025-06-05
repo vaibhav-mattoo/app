@@ -35,6 +35,9 @@ fn main() {
     insert_command("BI".to_string(), db_ref, dc_ref);
     insert_command("HI".to_string(), db_ref, dc_ref);
 
+    println!("hi");
+    println!("{:#?}", db_ref);
+
 
     match &cli.operation {
         Operation::Add { alias } => {

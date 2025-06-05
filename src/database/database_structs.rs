@@ -1,6 +1,6 @@
 use std::collections:: {BTreeSet, HashMap};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Database {
     pub command_list: BTreeSet<Command>,
     pub reverse_command_map: HashMap<String, Command>,
