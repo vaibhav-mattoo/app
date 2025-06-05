@@ -101,6 +101,8 @@ impl Database {
         for mut cmd in old_set {
             cmd.frequency = (cmd.frequency as f32 * 0.1).round() as i32;
             get_score(&cmd); 
+            cmd.update();
+            cmd.frequency-=1;
             self.command_list.insert(cmd);
         }
         

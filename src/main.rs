@@ -1,6 +1,7 @@
 mod cli;
 mod ops;
 mod database;
+mod historyfile;
 
 use cli::arg_handler::parse_args;
 use cli::cli_data::Operation;
@@ -9,6 +10,7 @@ use ops::insert_command::insert_command;
 use ops::delete_suggestion::delete_suggestion;
 use database::database_structs::{Database, Deleted_Commands};
 use ops::alias_ops::{get_aliases_list, add_alias, remove_alias};
+use historyfile::monitoring_history::monitor_history_file;
 
 fn main() {
     let cli = parse_args();
@@ -35,7 +37,8 @@ fn main() {
     insert_command("BI".to_string(), db_ref, dc_ref);
     insert_command("HI".to_string(), db_ref, dc_ref);
 
-
+    
+    monitor_history_file();
     match &cli.operation {
         Operation::Add { alias } => {
             println!("alias added: {}", alias);
