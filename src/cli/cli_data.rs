@@ -19,13 +19,22 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum Operation {
-    Add { alias: String },
-    Remove { alias: String },
+    Add {
+        alias: String,
+    },
+    Remove {
+        alias: String,
+    },
     List,
-    Change { alias: String },
+    Change {
+        alias: String,
+    },
     GetSuggestions {
         #[arg(short = 't', long)]
         num: Option<usize>,
     },
-    DeleteSuggestion { alias: String },
+    DeleteSuggestion {
+        alias: String,
+    },
+    Tui,
 }
