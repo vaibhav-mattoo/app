@@ -43,15 +43,21 @@ impl Database {
                 let mut updated_command = existing_command.clone();
                 self.total_score -= updated_command.score as i64;
                 self.total_num_commands -= 1;
-                updated_command.update();
+                updated_command.add();
 
                 self.command_list.remove(existing_command);
                 self.reverse_command_map.remove(&command_str);
 
                 self.command_list.insert(updated_command.clone());
-                self.reverse_command_map.insert(command_str, updated_command);
+                self.reverse_command_map.insert(command_str.clone(), updated_command);
+
+                self.total_num_commands += 1;
+                self.total_score += self.reverse_command_map.get(&command_str).unwrap().score as i64;
             } else {
                 let new_command: Command = Command::new(command_str.clone());
+                if new_command.length <= 5 && new_command.number_of_words == 1 {
+                    return; // Ignore commands that are too short and single-word
+                }
                 self.command_list.insert(new_command.clone());
                 self.reverse_command_map.insert(command_str.clone(), new_command);
                 self.total_num_commands += 1;
@@ -79,9 +85,6 @@ impl Database {
     }
 
     pub fn get_top_commands(&mut self, n: Option<usize>) -> Vec<&Command> {
-        // will be sorted by score, get top n
-        // let n = n.unwrap_or(10);
-        // println!("working");
         let n = n.unwrap_or(5);
         self.command_list.iter().take(n).collect()
     }
@@ -129,11 +132,15 @@ impl Command {
             number_of_words,
         }
     }
-    pub fn update(&mut self) {
+    pub fn add(&mut self) {
         // here we update the last_access time, frequency, and score
         let now = SystemTime::now();
         self.last_access_time = now.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64; // placeholder
         self.frequency += 1;
+        self.score = get_score(self);
+    }
+    pub fn update (&mut self) {
+        // just update with time and score
         self.score = get_score(self);
     }
 }
