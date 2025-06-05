@@ -9,6 +9,12 @@ pub fn insert_command(command_str: String, db: &mut Database, deleted_commands: 
         return; // Do not insert empty commands
     }
     let command_parts: Vec<&str> = command_str.split_whitespace().collect();
+    if command_parts.is_empty() {
+        return; // Do not insert commands with no words
+    }
+    if command_parts[0] == "app" {
+        return;
+    }
     // maintain a stirng called temp, which stores command so far and then we do a for loop
     let mut temp = String::new();
     for word in command_parts.iter() {
