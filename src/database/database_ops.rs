@@ -1,5 +1,5 @@
 // use core::time;
-// use std::collections::BTreeSet;
+use std::collections::BTreeSet;
 use std::time::{SystemTime, UNIX_EPOCH};
 use super::database_structs::{Command, Database, Deleted_Commands};
 
@@ -93,8 +93,18 @@ impl Database {
     pub fn score_reset(&mut self){
         //iterate through the set and reduce the score of each string by 90%
         for value in self.reverse_command_map.values_mut() {
-            value.score = (value.score as f32 * 0.9).round() as i32;
+            value.frequency = (value.frequency as f32 * 0.1).round() as i32;
+            get_score(&value);
         }
+        let old_set = std::mem::take(&mut self.command_list);
+
+        for mut cmd in old_set {
+            cmd.frequency = (cmd.frequency as f32 * 0.1).round() as i32;
+            get_score(&cmd); 
+            self.command_list.insert(cmd);
+        }
+        
+        
     }
 
 }
