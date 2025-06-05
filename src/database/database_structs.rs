@@ -9,14 +9,14 @@ pub struct Database {
 }
 
 #[derive(Debug)]
-pub struct Deleted_Commands {
+pub struct DeletedCommands {
     pub deleted_commands: BTreeSet<String>,
 }
 
-#[derive(Debug)]
-pub struct Suggestions {
-    pub alias_suggestion: Vec<String>,
-}
+// #[derive(Debug)]
+// pub struct Suggestions {
+//     pub alias_suggestion: Vec<String>,
+// }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Command {

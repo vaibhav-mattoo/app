@@ -1,6 +1,6 @@
-use crate::database::database_structs::{Database, Deleted_Commands};
+use crate::database::database_structs::{Database, DeletedCommands};
 
-pub fn insert_command(command_str: String, db: &mut Database, deleted_commands: &Deleted_Commands) {
+pub fn insert_command(command_str: String, db: &mut Database, deleted_commands: &DeletedCommands) {
     // now we should find every prefix of the command and insert that
     // for example, if git add . ; we should insert git, git add, git add .
     // should have single space between words in command, input may have multiple spaces

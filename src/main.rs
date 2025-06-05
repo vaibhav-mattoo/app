@@ -7,7 +7,7 @@ use cli::cli_data::Operation;
 use ops::get_suggestions::{get_suggestions};
 use ops::insert_command::insert_command;
 use ops::delete_suggestion::delete_suggestion;
-use database::database_structs::{Database, Deleted_Commands};
+use database::database_structs::{Database, DeletedCommands};
 use ops::alias_ops::{get_aliases_list, add_alias, remove_alias};
 
 fn main() {
@@ -19,10 +19,10 @@ fn main() {
         total_score: 0,
     };
     let db_ref: &mut Database = &mut db;
-    let mut deleted_commands: Deleted_Commands = Deleted_Commands {
+    let mut deleted_commands: DeletedCommands = DeletedCommands {
         deleted_commands: std::collections::BTreeSet::new(),
     };
-    let dc_ref: &mut Deleted_Commands = &mut deleted_commands;
+    let dc_ref: &mut DeletedCommands = &mut deleted_commands;
 
     let file_path = "./store.aliases";
 
