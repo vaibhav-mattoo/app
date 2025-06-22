@@ -8,16 +8,16 @@ fn get_score(command: &Command) -> i32 {
     let current_time: i64 = now.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
     let time_difference: i64 = current_time - command.last_access_time;
     let mult: f64;
-    if time_difference<=3600{
+    if time_difference <= 3600 {
         mult=4.0;
     }
-    else if time_difference<=86400{
+    else if time_difference <= 86400 {
         mult=2.0;
     }
-    else if time_difference<=604800{
+    else if time_difference <= 604800 {
         mult=0.5;
     }
-    else{
+    else {
         mult=0.25;
     }
     let length = command.length as f64;

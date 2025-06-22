@@ -55,7 +55,7 @@ pub fn get_aliases_list (file_path: &str) -> Vec<(String, String)> {
     aliases
 }
 
-pub fn add_alias(file_path: &str, alias: &str, command: &str) {
+pub fn add_alias_to_file(file_path: &str, alias: &str, command: &str) {
     let mut aliases = get_aliases (file_path);
     // Check if alias already exists, just the alias part
     if aliases.iter().any(|(a, _)| a == alias) {

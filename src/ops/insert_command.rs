@@ -12,7 +12,7 @@ pub fn insert_command(command_str: String, db: &mut Database, deleted_commands: 
     if command_parts.is_empty() {
         return; // Do not insert commands with no words
     }
-    if command_parts[0] == "app" {
+    if command_parts[0] == "app" { // change later to app name later.
         return;
     }
     // maintain a stirng called temp, which stores command so far and then we do a for loop

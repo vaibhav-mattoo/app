@@ -7,8 +7,9 @@ use cli::cli_data::Operation;
 use ops::get_suggestions::{get_suggestions};
 use ops::insert_command::insert_command;
 use ops::delete_suggestion::delete_suggestion;
+use ops::add_alias::add_alias;
 use database::database_structs::{Database, DeletedCommands};
-use ops::alias_ops::{get_aliases_list, add_alias, remove_alias};
+use ops::alias_ops::{get_aliases_list, add_alias_to_file, remove_alias};
 
 fn main() {
     let cli = parse_args();
@@ -36,7 +37,7 @@ fn main() {
     insert_command("HI".to_string(), db_ref, dc_ref);
 
     println!("hi");
-    println!("{:#?}", db_ref);
+    // println!("{:#?}", db_ref);
 
 
     match &cli.operation {
