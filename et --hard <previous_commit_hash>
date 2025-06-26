@@ -1,0 +1,37 @@
+[33m8d01290[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mhooks[m[33m, [m[1;31morigin/hooks[m[33m)[m hooks added
+[33mb690ce6[m[33m ([m[1;31morigin/alias_ops[m[33m, [m[1;32malias_ops[m[33m)[m score func updated
+[33m47d7423[m[33m ([m[1;32mdatabases_ops_test[m[33m)[m basic alias operations done
+[33mbf4ab4c[m prefixes
+[33m7c44b71[m[33m ([m[1;31morigin/databases_ops_test[m[33m)[m scoring and minor stuff done
+[33m1396073[m added ops
+[33ma5cfbe2[m[33m ([m[1;31morigin/basic_working[m[33m)[m basic stuff working, need to test more
+[33ma37d715[m bug help
+[33m5428546[m[33m ([m[1;31morigin/database_updates[m[33m, [m[1;32mdatabase_updates[m[33m)[m sort fix
+[33mdf185dd[m[33m ([m[1;32mdir_update[m[33m)[m Merge branch 'database_ops' of https://github.com/vaibhav-mattoo/app into dir_update
+[33m32367dd[m[33m ([m[1;31morigin/database_ops[m[33m)[m first implementatino of database operations
+[33mc6ba284[m started working on database operations
+[33mbfff8df[m[33m ([m[1;31morigin/database_struct_setting[m[33m)[m added some members
+[33mf634175[m database struct initial
+[33m7846df4[m Merge branch 'dir_update' of https://github.com/vaibhav-mattoo/app into dir_update
+[33mde6b411[m[33m ([m[1;31morigin/dir_update[m[33m)[m command line parsing functional
+[33m06f4012[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Update README.md
+[33mb110a2e[m cli struct basic
+[33m05f25eb[m file name feature
+[33mb0189f8[m alias list file
+[33macb31df[m dir structure added
+[33mfee4d81[m file name feature
+[33m2f1e35e[m extension
+[33mc5cb2f8[m proper initialization
+[33m419863c[m modified ALGO.md
+[33me7c0edf[m not big
+[33m8f5ac51[m kushal gay
+[33m434d1dd[m ALGO overview added stuff
+[33m691e4e2[m ALGO overview start
+[33m54b3b96[m starting main.rs
+[33ma732754[m Update README.md
+[33mee2e146[m verify
+[33m5cc9a8d[m Create hello
+[33m6c29c5b[m Create README.md
+[33m869be82[m start
+[33m74440eb[m checking
+[33m30547b7[m Initial commit

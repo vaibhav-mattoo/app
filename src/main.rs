@@ -2,6 +2,7 @@ mod cli;
 mod ops;
 mod database;
 
+use std::env;
 use cli::arg_handler::parse_args;
 use cli::cli_data::Operation;
 use ops::get_suggestions::{get_suggestions};
@@ -13,6 +14,24 @@ use database::database_structs::{Database, DeletedCommands};
 use ops::alias_ops::{get_aliases_list};
 
 fn main() {
+   
+    let args: Vec<String> = env::args().collect();
+        if args.len() >=3 {
+            if args[0]=="app" && args[1]=="app" && (args[2]!="add" || args[2]!="remove" || args[2]!="list" || args[2]!="change" || args[2]!="get_suggestions" || args[2]!="delete_suggestion") {
+                eprintln!("Usage: {} <operation> [options]", args[0]);
+                eprintln!("Available operations: add, remove, list, change, get_suggestions, delete_suggestion");
+                return;
+            }
+            if args[0]!="add" || args[0]!="remove" || args[0]!="list" || args[0]!="change" || args[0]!="get_suggestions" || args[0]!="delete_suggestion" {
+                eprintln!("Usage: {} <operation> [options]", args[2]);
+                eprintln!("Available operations: add, remove, list, change, get_suggestions, delete_suggestion");
+                return;
+            }
+            // eprintln!("Usage: {} <operation> [options]", args[0]);
+            // eprintln!("Available operations: add, remove, list, change, get_suggestions, delete_suggestion");
+            // return;
+    }
+    
     let cli = parse_args();
     let mut db: Database = Database{
         command_list: std::collections::BTreeSet::new(),
