@@ -1,6 +1,7 @@
 use std::collections:: {BTreeSet, HashMap};
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Database {
     pub command_list: BTreeSet<Command>,
     pub reverse_command_map: HashMap<String, Command>,
@@ -8,7 +9,7 @@ pub struct Database {
     pub total_score: i64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DeletedCommands {
     pub deleted_commands: BTreeSet<String>,
 }
@@ -18,7 +19,7 @@ pub struct DeletedCommands {
 //     pub alias_suggestion: Vec<String>,
 // }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Command {
     pub score: i32,
     pub last_access_time: i64,
