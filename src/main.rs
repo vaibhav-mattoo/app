@@ -15,25 +15,8 @@ use ops::alias_ops::{get_aliases_list};
 
 fn main() {
    
-    let args: Vec<String> = env::args().collect();
-        if args.len() >=3 {
-            if args[0]=="app" && args[1]=="app" && (args[2]!="add" || args[2]!="remove" || args[2]!="list" || args[2]!="change" || args[2]!="get_suggestions" || args[2]!="delete_suggestion") {
-                eprintln!("Usage: {} <operation> [options]", args[0]);
-                eprintln!("Available operations: add, remove, list, change, get_suggestions, delete_suggestion");
-                return;
-            }
-            if args[0]!="add" || args[0]!="remove" || args[0]!="list" || args[0]!="change" || args[0]!="get_suggestions" || args[0]!="delete_suggestion" {
-                eprintln!("Usage: {} <operation> [options]", args[2]);
-                eprintln!("Available operations: add, remove, list, change, get_suggestions, delete_suggestion");
-                return;
-            }
-            // eprintln!("Usage: {} <operation> [options]", args[0]);
-            // eprintln!("Available operations: add, remove, list, change, get_suggestions, delete_suggestion");
-            // return;
-    }
-    
-    let cli = parse_args();
-    let mut db: Database = Database{
+   let command_strings: Vec<String> = env::args().skip(1).collect();
+   let mut db: Database = Database{
         command_list: std::collections::BTreeSet::new(),
         reverse_command_map: std::collections::HashMap::new(),
         total_num_commands: 0,
@@ -46,17 +29,17 @@ fn main() {
     let dc_ref: &mut DeletedCommands = &mut deleted_commands;
 
     let file_path = "./store.aliases";
-
-    insert_command("example command".to_string(), db_ref, dc_ref);
-    // delete_suggestion("example", db_ref, dc_ref);
-    insert_command("example command lil big".to_string(), db_ref, dc_ref);
-    insert_command("example command".to_string(), db_ref, dc_ref);
-    insert_command("HI".to_string(), db_ref, dc_ref);
-    insert_command("BI".to_string(), db_ref, dc_ref);
-    insert_command("BI".to_string(), db_ref, dc_ref);
-    insert_command("HI".to_string(), db_ref, dc_ref);
-
-    println!("{:#?}", db_ref);
+    // let command_strings: Vec<String> = env::args().skip(1).collect();
+    let command= command_strings.join(" ");
+    if command_strings[0] != "app" {
+        // insert_command("example command".to_string(), db_ref, dc_ref);
+        insert_command(command.to_string(),db_ref, dc_ref);
+        println!("{:#?}", db_ref);
+        return;
+    }
+    // println!("{:#?}", db_ref);
+    let cli = parse_args();
+   
 
 
     match &cli.operation {
