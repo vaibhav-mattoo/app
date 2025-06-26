@@ -50,7 +50,7 @@ fn main() {
         }
         Operation::Remove { alias } => {
             println!("remove alias: {}", alias);
-            remove_alias(db_ref, dc_ref, file_path, alias);
+            remove_alias(dc_ref, file_path, alias);
         }
         Operation::List => {
             // println!("list is called");

@@ -1,7 +1,7 @@
-use crate::database::database_structs::{Database,DeletedCommands};
+use crate::database::database_structs::{DeletedCommands};
 use crate::ops::alias_ops::{remove_alias_from_file, get_aliases};
 
-pub fn remove_alias(db: &mut Database, deleted_commands: &mut DeletedCommands, file_path: &str, alias: &str) {
+pub fn remove_alias(deleted_commands: &mut DeletedCommands, file_path: &str, alias: &str) {
     // we are removing an alias, so we need to remove from deleted commands, 
     // so that future commands can be added
     // for this we simply remove the command from deleted commands
