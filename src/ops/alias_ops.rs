@@ -67,7 +67,7 @@ pub fn add_alias_to_file(file_path: &str, alias: &str, command: &str) {
     write_aliases(file_path, aliases);
 }
 
-pub fn remove_alias(file_path: &str, alias: &str) {
+pub fn remove_alias_from_file(file_path: &str, alias: &str) {
     let mut aliases = get_aliases(file_path);
     // Remove alias if it exists
     if let Some(pos) = aliases.iter().position(|(a, _)| a == alias) {
