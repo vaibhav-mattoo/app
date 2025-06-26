@@ -65,8 +65,13 @@ fn main() {
     }
 
     println!("{}", command_strings[0]);
-    if command_strings[0] == "/home/vaibhav/alias_suggestor/app/target/debug/app" {
+    // if command_strings[0] == "/home/vaibhav/alias_suggestor/app/target/release/app" {
+    if command_strings[1] == "get-suggestions" {
         println!("Detected the command");
+        println!(
+            "command : {}, command_string[0] : {}, command_string[1] : {}",
+            command, command_strings[0], command_strings[1]
+        );
         // This is a subcommand, parse and handle it
         let cli = parse_args();
 
