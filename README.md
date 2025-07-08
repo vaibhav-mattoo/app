@@ -17,7 +17,6 @@ Built with **Rust** for safety and speed, this tool helps automate a typically m
 - 📈 **Scoring System**: Uses a smart ranking algorithm (frequency + recency) to suggest relevant aliases.
 - ⚡ **One-Click Alias Creation**: Apply a suggestion to your shell config in one keystroke.
 - 🖥️ **TUI Interface**: Interactive terminal UI for browsing, selecting, and customizing aliases.
-- 🐚 **Shell Support**: Works with `bash` and `zsh`. No manual `.bashrc` or `.zshrc` editing needed.
 - 🦀 **Rust-Powered**: Fast, safe, and efficient command-line interactions.
 
 ---
