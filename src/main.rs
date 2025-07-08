@@ -65,7 +65,7 @@ fn main() {
     }
 
     println!("{}", command_strings[0]);
-    if command_strings[0] == "/home/vaibhav/alias_suggestor/app/target/debug/app" {
+    if command_strings[1] == "getsuggestions" {
         println!("Detected the command");
         // This is a subcommand, parse and handle it
         let cli = parse_args();
@@ -133,7 +133,7 @@ fn main() {
             eprintln!("Failed to save deleted commands: {}", e);
         }
 
-        // println!("{:#?}", db_ref);
-        println!("hi");
+        println!("{:#?}", db_ref);
+        println!("command inserted: {}", command);
     }
 }

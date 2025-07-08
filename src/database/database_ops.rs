@@ -45,6 +45,7 @@ impl Database {
 
                 self.total_num_commands += 1;
                 self.total_score += self.reverse_command_map.get(&command_str).unwrap().score as i64;
+
             } else {
                 let new_command: Command = Command::new(command_str.clone());
                 if new_command.length <= 5 && new_command.number_of_words == 1 {
@@ -55,6 +56,11 @@ impl Database {
                 self.total_num_commands += 1;
                 self.total_score += self.reverse_command_map.get(&command_str).unwrap().score as i64;
             }
+            let threshold: i64 = 250;
+            if self.total_score > threshold {
+                self.score_reset();
+            }
+            
         }
     }
 
@@ -76,40 +82,69 @@ impl Database {
         }
     }
 
-    pub fn update_db (&mut self) {
-        // we should iterate over the reverse_command_map and update each command using its update function
-        // maybe also remove commands which have very low score, to be implemented later
-        // let threshold: i32 = 10000;
-        let mut copy = self.reverse_command_map.clone();
-        for (key, command) in copy.iter_mut() {
-
+    pub fn update_db(&mut self) {
+    // Update each command in place
+    let keys: Vec<String> = self.reverse_command_map.keys().cloned().collect();
+    for key in keys {
+        if let Some(command) = self.reverse_command_map.get_mut(&key) {
             self.total_score -= command.score as i64;
             command.update();
             self.total_score += command.score as i64;
 
-            self.command_list.remove(&command);
-            self.reverse_command_map.remove(key);
-
+            // Remove and re-insert in command_list to update ordering if needed
+            self.command_list.remove(command);
             self.command_list.insert(command.clone());
-            self.reverse_command_map.insert(key.clone(), command.clone());
         }
     }
+    let threshold: i64 = 250;
+    if self.total_score > threshold {
+        self.score_reset();
+    }
+}
 
     pub fn get_top_commands(&mut self, n: Option<usize>) -> Vec<&Command> {
         let n = n.unwrap_or(5);
         self.command_list.iter().take(n).collect()
     }
 
-    // pub fn get_total_score(&self) -> i64 {
-    //     self.total_score
-    // }
+    pub fn get_total_score(&self) -> i64 {
+        self.total_score
+    }
 
-    // pub fn score_reset(&mut self){
-    //     //iterate through the set and reduce the score of each string by 90%
-    //     for value in self.reverse_command_map.values_mut() {
-    //         value.score = (value.score as f32 * 0.9).round() as i32;
-    //     }
-    // }
+    pub fn score_reset(&mut self){
+        //iterate through the set & map and reduce the freq of each string by 90% and delete the strings with 0 freq
+        let mut to_remove = Vec::new();
+        let mut num:i32 =0;
+        let mut sc:i64=0;
+        for (key, value) in self.reverse_command_map.iter_mut() {
+            value.frequency = (value.frequency as f32 * 0.1).round() as i32;
+            self.total_score -= value.score as i64;
+            value.score = get_score(&value);
+            sc+= value.score as i64;
+            if value.frequency < 1 {
+                self.total_num_commands-=1;
+                
+                to_remove.push(key.clone());
+            }
+            else {num+=1;}
+        }
+        println!("Resetting scores, total score: {}, total commands: {}", sc, num);
+        self.total_score = sc;
+        self.total_num_commands = num;
+        println!("Resetting scores, total score: {}, total commands: {}", self.total_score, self.total_num_commands);
+        for key in &to_remove {
+            self.reverse_command_map.remove(key);
+        }
+        let old_set = std::mem::take(&mut self.command_list);
+
+        for mut cmd in old_set {
+            cmd.frequency = (cmd.frequency as f32 * 0.1).round() as i32;
+            cmd.score=get_score(&cmd); 
+            if cmd.frequency>0 {self.command_list.insert(cmd);}
+        }
+        
+        
+    }
 
 }
 

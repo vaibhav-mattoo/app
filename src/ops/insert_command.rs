@@ -26,5 +26,6 @@ pub fn insert_command(command_str: String, db: &mut Database, deleted_commands: 
         // Insert the current command prefix into the database
         db.add_command(tempp, deleted_commands);
     }
+    // println!("hmm: {}", command_str);
     db.add_command(command_str, deleted_commands);
 }
