@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{BufRead, Write, BufReader};
-use std::io::prelude::*;
 
 // funcs to do:
 // func to get vector < pair < command, alias > > from file
@@ -20,15 +19,18 @@ pub fn get_aliases(file_path: &str) -> Vec<(String, String)> {
 
     for line in reader.lines() {
         let line = line.expect("Could not read line from alias file");
-        // aliases are in form ==> alias ll='ls -la'
-        // first strip 'alias ' from line
         let line = line.trim();
         if line.starts_with ("alias ") {
             let line_in = line[6..].trim();
             // now split by =
             if let Some(eq_index) = line_in.find('=') {
                 let alias = line_in[..eq_index].trim().to_string();
-                let command = line_in[(eq_index + 1)..].trim().trim_matches(&['\'', '\"']).to_string();
+                let mut command = line_in[(eq_index + 1)..].trim();
+                if (command.starts_with('\'') && command.ends_with('\'')) ||
+                   (command.starts_with('"') && command.ends_with('"')) {
+                    command = &command[1..command.len()-1];
+                }
+                let command = command.to_string();
                 aliases.push((alias, command));
             } else {
                 println!("Invalid alias format in line: {}", line);
@@ -53,7 +55,7 @@ pub fn get_aliases_list (file_path: &str) -> Vec<(String, String)> {
     aliases
 }
 
-pub fn add_alias(file_path: &str, alias: &str, command: &str) {
+pub fn add_alias_to_file(file_path: &str, alias: &str, command: &str) {
     let mut aliases = get_aliases (file_path);
     // Check if alias already exists, just the alias part
     if aliases.iter().any(|(a, _)| a == alias) {
@@ -65,7 +67,7 @@ pub fn add_alias(file_path: &str, alias: &str, command: &str) {
     write_aliases(file_path, aliases);
 }
 
-pub fn remove_alias(file_path: &str, alias: &str) {
+pub fn remove_alias_from_file(file_path: &str, alias: &str) {
     let mut aliases = get_aliases(file_path);
     // Remove alias if it exists
     if let Some(pos) = aliases.iter().position(|(a, _)| a == alias) {

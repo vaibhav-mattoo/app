@@ -1,69 +1,72 @@
+
 // use core::time;
 // use std::collections::BTreeSet;
-use super::database_structs::{Command, Database, Deleted_Commands};
 use std::time::{SystemTime, UNIX_EPOCH};
+use super::database_structs::{Command, Database, DeletedCommands};
 
 fn get_score(command: &Command) -> i32 {
-    // Make a simple scoring func for now, just return the length
-    // let x:f64=(command.length).powf(3.0/5.0);
     let now = SystemTime::now();
-
-    // match now.duration_since(UNIX_EPOCH) {
-    //     // Ok(duration) => {},
-    //     Ok(duration) => println!("UNIX timestamp: {}", duration.as_secs()),
-    //     Err(e) => eprintln!("Time error: {:?}", e),
-    // }
     let current_time: i64 = now.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
     let time_difference: i64 = current_time - command.last_access_time;
-    let mut mult: f64 = 1.0;
+    let mult: f64;
     if time_difference <= 3600 {
-        mult = 4.0;
-    } else if time_difference <= 86400 {
-        mult = 2.0;
-    } else if time_difference <= 604800 {
-        mult = 0.5;
-    } else {
-        mult = 0.25;
+        mult=4.0;
+    }
+    else if time_difference <= 86400 {
+        mult=2.0;
+    }
+    else if time_difference <= 604800 {
+        mult=0.5;
+    }
+    else {
+        mult=0.25;
     }
     let length = command.length as f64;
     let frequency = command.frequency as f64;
 
     (mult * length.powf(3.0 / 5.0) * frequency) as i32
+    
+    
 }
 
 impl Database {
-    pub fn add_command(&mut self, command_str: String, deleted_commands: &Deleted_Commands) {
+    pub fn add_command(&mut self, command_str: String, deleted_commands: &DeletedCommands) {
         if !deleted_commands.deleted_commands.contains(&command_str) {
             if let Some(existing_command) = self.reverse_command_map.get(&command_str) {
                 let mut updated_command = existing_command.clone();
                 self.total_score -= updated_command.score as i64;
                 self.total_num_commands -= 1;
-                updated_command.update();
+                updated_command.add();
 
                 self.command_list.remove(existing_command);
                 self.reverse_command_map.remove(&command_str);
 
                 self.command_list.insert(updated_command.clone());
-                self.reverse_command_map
-                    .insert(command_str, updated_command);
+                self.reverse_command_map.insert(command_str.clone(), updated_command);
+
+                self.total_num_commands += 1;
+                self.total_score += self.reverse_command_map.get(&command_str).unwrap().score as i64;
+
             } else {
                 let new_command: Command = Command::new(command_str.clone());
+                if new_command.length <= 5 && new_command.number_of_words == 1 {
+                    return; // Ignore commands that are too short and single-word
+                }
                 self.command_list.insert(new_command.clone());
-                self.reverse_command_map
-                    .insert(command_str.clone(), new_command);
+                self.reverse_command_map.insert(command_str.clone(), new_command);
                 self.total_num_commands += 1;
-                self.total_score +=
-                    self.reverse_command_map.get(&command_str).unwrap().score as i64;
+                self.total_score += self.reverse_command_map.get(&command_str).unwrap().score as i64;
             }
+            let threshold: i64 = 250;
+            if self.total_score > threshold {
+                self.score_reset();
+            }
+            
         }
     }
 
-    pub fn remove_command(
-        &mut self,
-        command_str: &String,
-        deleted_commands: &mut Deleted_Commands,
-    ) {
-        // first check if already exists in Deleted_Commands
+    pub fn remove_command(&mut self, command_str: &String, deleted_commands: &mut DeletedCommands) {
+        // first check if already exists in DeletedCommands
         if !deleted_commands.deleted_commands.contains(command_str) {
             deleted_commands
                 .deleted_commands
@@ -80,10 +83,27 @@ impl Database {
         }
     }
 
-    pub fn get_top_commands(&self, n: Option<usize>) -> Vec<&Command> {
-        // will be sorted by score, get top n
-        // let n = n.unwrap_or(10);
-        // println!("working");
+    pub fn update_db(&mut self) {
+    // Update each command in place
+    let keys: Vec<String> = self.reverse_command_map.keys().cloned().collect();
+    for key in keys {
+        if let Some(command) = self.reverse_command_map.get_mut(&key) {
+            self.total_score -= command.score as i64;
+            command.update();
+            self.total_score += command.score as i64;
+
+            // Remove and re-insert in command_list to update ordering if needed
+            self.command_list.remove(command);
+            self.command_list.insert(command.clone());
+        }
+    }
+    let threshold: i64 = 250;
+    if self.total_score > threshold {
+        self.score_reset();
+    }
+}
+
+    pub fn get_top_commands(&mut self, n: Option<usize>) -> Vec<&Command> {
         let n = n.unwrap_or(5);
         self.command_list.iter().take(n).collect()
     }
@@ -92,20 +112,46 @@ impl Database {
         self.total_score
     }
 
-    pub fn score_reset(&mut self) {
-        //iterate through the set and reduce the score of each string by 90%
-        for value in self.reverse_command_map.values_mut() {
-            value.score = (value.score as f32 * 0.9).round() as i32;
+    pub fn score_reset(&mut self){
+        //iterate through the set & map and reduce the freq of each string by 90% and delete the strings with 0 freq
+        let mut to_remove = Vec::new();
+        let mut num:i32 =0;
+        let mut sc:i64=0;
+        for (key, value) in self.reverse_command_map.iter_mut() {
+            value.frequency = (value.frequency as f32 * 0.1).round() as i32;
+            self.total_score -= value.score as i64;
+            value.score = get_score(&value);
+            sc+= value.score as i64;
+            if value.frequency < 1 {
+                self.total_num_commands-=1;
+                
+                to_remove.push(key.clone());
+            }
+            else {num+=1;}
         }
+        println!("Resetting scores, total score: {}, total commands: {}", sc, num);
+        self.total_score = sc;
+        self.total_num_commands = num;
+        println!("Resetting scores, total score: {}, total commands: {}", self.total_score, self.total_num_commands);
+        for key in &to_remove {
+            self.reverse_command_map.remove(key);
+        }
+        let old_set = std::mem::take(&mut self.command_list);
+
+        for mut cmd in old_set {
+            cmd.frequency = (cmd.frequency as f32 * 0.1).round() as i32;
+            cmd.score=get_score(&cmd); 
+            if cmd.frequency>0 {self.command_list.insert(cmd);}
+        }
+        
+        
     }
+
 }
 
 impl Command {
     pub fn new(command_text: String) -> Self {
-        let length: i16 = command_text
-            .split_whitespace()
-            .map(|s| s.len())
-            .sum::<usize>() as i16;
+        let length: i16 = command_text.split_whitespace().map(|s| s.len()).sum::<usize>() as i16;
         //map transforms the strings into their lengths
         let number_of_words: i8 = command_text.split_whitespace().count() as i8;
         let frequency: i32 = 1;
@@ -133,11 +179,15 @@ impl Command {
             number_of_words,
         }
     }
-    pub fn update(&mut self) {
+    pub fn add(&mut self) {
         // here we update the last_access time, frequency, and score
         let now = SystemTime::now();
         self.last_access_time = now.duration_since(UNIX_EPOCH).unwrap().as_secs() as i64; // placeholder
         self.frequency += 1;
+        self.score = get_score(self);
+    }
+    pub fn update (&mut self) {
+        // just update with time and score
         self.score = get_score(self);
     }
 }
