@@ -7,7 +7,7 @@ pub struct Cli {
     #[command(subcommand)]
     pub operation: Operation,
 
-    #[arg(short, long, default_value = "./../../store.aliases")]
+    #[arg(short, long, default_value = "/home/fuckotheclown/repos/projects/app/store.aliases")]
     pub alias_file_path: PathBuf,
 
     #[arg(short = 'n', long, default_value = "0")]
