@@ -1,3 +1,4 @@
+
 mod cli;
 mod database;
 mod ops;
@@ -16,6 +17,8 @@ use ops::get_suggestions::get_suggestions;
 use ops::insert_command::insert_command;
 use ops::remove_alias::remove_alias;
 use std::env;
+use tui::run_tui;
+
 
 fn main() {
     // Ensure data directory exists
@@ -118,6 +121,11 @@ fn main() {
                 if let Err(e) = save_deleted_commands(dc_ref, &deleted_commands_path) {
                     eprintln!("Failed to save deleted commands: {}", e);
                 }
+            }
+            Operation::Tui => {
+              if let Err(e) = run_tui(cli.alias_file_path) {
+                  eprintln!("TUI error: {}", e);
+              }
             }
         }
     } else {
