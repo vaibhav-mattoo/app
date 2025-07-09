@@ -51,7 +51,27 @@ pub fn run_tui(alias_file_path: PathBuf) -> Result<(), Box<dyn std::error::Error
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    let terminal = Terminal::new(backend)?;
+
+    // Use a struct to ensure cleanup happens
+    struct TerminalGuard {
+        terminal: Terminal<CrosstermBackend<io::Stdout>>,
+    }
+
+    impl Drop for TerminalGuard {
+        fn drop(&mut self) {
+            // Always try to restore terminal state, even if it fails
+            let _ = disable_raw_mode();
+            let _ = execute!(
+                self.terminal.backend_mut(),
+                LeaveAlternateScreen,
+                DisableMouseCapture
+            );
+            let _ = self.terminal.show_cursor();
+        }
+    }
+
+    let mut terminal_guard = TerminalGuard { terminal };
 
     // Create app and load initial data
     let mut app = App::new(alias_file_path.clone());
@@ -59,7 +79,7 @@ pub fn run_tui(alias_file_path: PathBuf) -> Result<(), Box<dyn std::error::Error
 
     // Run the app
     let res = run_app(
-        &mut terminal,
+        &mut terminal_guard.terminal,
         &mut app,
         &mut database,
         &mut deleted_commands,
@@ -67,17 +87,8 @@ pub fn run_tui(alias_file_path: PathBuf) -> Result<(), Box<dyn std::error::Error
         &deleted_commands_path,
     );
 
-    // Restore terminal
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
-
     if let Err(err) = res {
-        println!("{:?}", err);
+        eprintln!("TUI error: {:?}", err);
     }
 
     Ok(())

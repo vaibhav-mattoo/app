@@ -57,7 +57,7 @@ fn main() {
     let db_ref: &mut Database = &mut db;
     let dc_ref: &mut DeletedCommands = &mut deleted_commands;
 
-    let file_path = "./store.aliases";
+    let file_path = "/home/fuckotheclown/repos/projects/app/store.aliases";
     let command_strings: Vec<String> = env::args().collect();
 
     // Check if this is a subcommand (starts with "app") or a direct command
