@@ -59,7 +59,6 @@ fn main() {
 
     let file_path = "./store.aliases";
     let command_strings: Vec<String> = env::args().collect();
-    let command = command_strings[1..].join(" ");
 
     // Check if this is a subcommand (starts with "app") or a direct command
     if command_strings.is_empty() {
@@ -68,7 +67,8 @@ fn main() {
     }
 
     println!("{}", command_strings[0]);
-    if command_strings[1] == "get-suggestions" {
+    // if command_strings[1] == "get-suggestions" {
+    if command_strings[1] != "custom" {
         println!("Detected the command");
         // This is a subcommand, parse and handle it
         let cli = parse_args();
@@ -131,6 +131,7 @@ fn main() {
     } else {
         // This is a direct command to insert
         // let command = command_strings.join(" ");
+        let command = command_strings[2..].join(" ");
         insert_command(command.to_string(), db_ref, dc_ref);
 
         // Save database after inserting command
