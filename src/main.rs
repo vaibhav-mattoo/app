@@ -1,7 +1,7 @@
-
 mod cli;
 mod database;
 mod ops;
+mod tui;
 
 use cli::arg_handler::parse_args;
 use cli::cli_data::Operation;
@@ -68,7 +68,7 @@ fn main() {
     }
 
     println!("{}", command_strings[0]);
-    if command_strings[1] == "getsuggestions" {
+    if command_strings[1] == "get-suggestions" {
         println!("Detected the command");
         // This is a subcommand, parse and handle it
         let cli = parse_args();

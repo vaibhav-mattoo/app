@@ -1,6 +1,10 @@
 use crate::cli::cli_data::Operation;
-use crate::database::database_structs::{Database, Deleted_Commands};
-use crate::ops::{alias_ops, delete_suggestion, get_suggestions};
+use crate::database::database_structs::{Database, DeletedCommands};
+use crate::database::persistence::{
+    ensure_data_directory, get_database_path, get_deleted_commands_path, load_database,
+    load_deleted_commands, save_database, save_deleted_commands,
+};
+use crate::ops::{alias_ops, add_alias , remove_alias, delete_suggestion, get_suggestions};
 use crate::tui::app::App;
 use crate::tui::ui::render_ui;
 use ratatui::crossterm::{
@@ -12,11 +16,36 @@ use ratatui::{
     Terminal,
     backend::{Backend, CrosstermBackend},
 };
-use std::collections::{BTreeSet, HashMap};
 use std::io;
 use std::path::PathBuf;
 
 pub fn run_tui(alias_file_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    // Ensure data directory exists
+    if let Err(e) = ensure_data_directory() {
+        eprintln!("Failed to create data directory: {}", e);
+        return Err(e);
+    }
+
+    // Load database and deleted commands from persistent storage
+    let db_path = get_database_path();
+    let deleted_commands_path = get_deleted_commands_path();
+
+    let mut database = match load_database(&db_path) {
+        Ok(db) => db,
+        Err(e) => {
+            eprintln!("Failed to load database: {}", e);
+            return Err(e);
+        }
+    };
+
+    let mut deleted_commands = match load_deleted_commands(&deleted_commands_path) {
+        Ok(dc) => dc,
+        Err(e) => {
+            eprintln!("Failed to load deleted commands: {}", e);
+            return Err(e);
+        }
+    };
+
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -24,20 +53,9 @@ pub fn run_tui(alias_file_path: PathBuf) -> Result<(), Box<dyn std::error::Error
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    // Initialize database and deleted commands
-    let mut database = Database {
-        command_list: BTreeSet::new(),
-        reverse_command_map: HashMap::new(),
-        total_num_commands: 0,
-        total_score: 0,
-    };
-    let mut deleted_commands = Deleted_Commands {
-        deleted_commands: BTreeSet::new(),
-    };
-
     // Create app and load initial data
     let mut app = App::new(alias_file_path.clone());
-    app.load_commands(&database);
+    app.load_commands(&mut database);
 
     // Run the app
     let res = run_app(
@@ -45,6 +63,8 @@ pub fn run_tui(alias_file_path: PathBuf) -> Result<(), Box<dyn std::error::Error
         &mut app,
         &mut database,
         &mut deleted_commands,
+        &db_path,
+        &deleted_commands_path,
     );
 
     // Restore terminal
@@ -67,7 +87,9 @@ fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
     database: &mut Database,
-    deleted_commands: &mut Deleted_Commands,
+    deleted_commands: &mut DeletedCommands,
+    db_path: &str,
+    deleted_commands_path: &str,
 ) -> io::Result<()> {
     loop {
         terminal.draw(|f| render_ui(f, app))?;
@@ -75,7 +97,7 @@ fn run_app<B: Backend>(
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Press {
                 if let Some(operation) = app.handle_key_event(key.code) {
-                    handle_operation(operation, app, database, deleted_commands);
+                    handle_operation(operation, app, database, deleted_commands, db_path, deleted_commands_path);
                 }
             }
         }
@@ -91,7 +113,9 @@ fn handle_operation(
     operation: Operation,
     app: &mut App,
     database: &mut Database,
-    deleted_commands: &mut Deleted_Commands,
+    deleted_commands: &mut DeletedCommands,
+    db_path: &str,
+    deleted_commands_path: &str,
 ) {
     let alias_file_path = app.alias_file_path.to_string_lossy().to_string();
 
@@ -100,23 +124,41 @@ fn handle_operation(
             if let Some(eq_pos) = alias.find('=') {
                 let alias_name = alias[..eq_pos].trim();
                 let command = alias[eq_pos + 1..].trim();
-                alias_ops::add_alias(&alias_file_path, alias_name, command);
+                add_alias::add_alias(database, deleted_commands, &alias_file_path, alias_name, command);
                 app.status_message = format!("Added alias: {} = {}", alias_name, command);
+                // Save after adding alias
+                if let Err(e) = save_database(database, db_path) {
+                    eprintln!("Failed to save database: {}", e);
+                }
+                if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
+                    eprintln!("Failed to save deleted commands: {}", e);
+                }
             } else {
                 app.status_message = "Invalid alias format".to_string();
             }
         }
         Operation::Remove { alias } => {
-            alias_ops::remove_alias(&alias_file_path, &alias);
+            remove_alias::remove_alias(deleted_commands, &alias_file_path, &alias);
             app.status_message = format!("Removed alias: {}", alias);
+            // Save after removing alias
+            if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
+                eprintln!("Failed to save deleted commands: {}", e);
+            }
         }
         Operation::Change { alias } => {
             if let Some(eq_pos) = alias.find('=') {
                 let alias_name = alias[..eq_pos].trim();
                 let command = alias[eq_pos + 1..].trim();
-                alias_ops::remove_alias(&alias_file_path, alias_name);
-                alias_ops::add_alias(&alias_file_path, alias_name, command);
+                remove_alias::remove_alias(deleted_commands, &alias_file_path, alias_name);
+                add_alias::add_alias(database, deleted_commands, &alias_file_path, alias_name, command);
                 app.status_message = format!("Changed alias: {} = {}", alias_name, command);
+                // Save after changing alias
+                if let Err(e) = save_database(database, db_path) {
+                    eprintln!("Failed to save database: {}", e);
+                }
+                if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
+                    eprintln!("Failed to save deleted commands: {}", e);
+                }
             } else {
                 app.status_message = "Invalid alias format".to_string();
             }
@@ -147,6 +189,13 @@ fn handle_operation(
             delete_suggestion::delete_suggestion(&alias, database, deleted_commands);
             app.status_message = format!("Deleted suggestion: {}", alias);
             app.load_commands(database);
+            // Save after deleting suggestion
+            if let Err(e) = save_database(database, db_path) {
+                eprintln!("Failed to save database: {}", e);
+            }
+            if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
+                eprintln!("Failed to save deleted commands: {}", e);
+            }
         }
         Operation::Tui => {
             // Already in TUI mode, do nothing

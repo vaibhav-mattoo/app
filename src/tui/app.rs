@@ -44,7 +44,7 @@ impl App {
         }
     }
 
-    pub fn load_commands(&mut self, database: &Database) {
+    pub fn load_commands(&mut self, database: &mut Database) {
         self.commands = database
             .get_top_commands(None)
             .iter()
