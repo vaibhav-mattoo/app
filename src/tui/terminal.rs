@@ -18,7 +18,7 @@ use ratatui::{
 };
 use std::io;
 use std::path::PathBuf;
-use std::os::unix::fs::PermissionsExt;
+
 
 pub fn run_tui(alias_file_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     // Ensure data directory exists

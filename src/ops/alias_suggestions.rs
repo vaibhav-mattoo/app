@@ -467,7 +467,5 @@ impl AliasSuggester {
         priority
     }
 
-    pub fn refresh_existing_aliases(&mut self, alias_file_path: &str) {
-        self.existing_aliases = Self::load_existing_aliases(alias_file_path);
-    }
+
 } 

@@ -108,9 +108,7 @@ impl Database {
         self.command_list.iter().take(n).collect()
     }
 
-    pub fn get_total_score(&self) -> i64 {
-        self.total_score
-    }
+
 
     pub fn score_reset(&mut self){
         //iterate through the set & map and reduce the freq of each string by 50% and delete the strings with 0 freq

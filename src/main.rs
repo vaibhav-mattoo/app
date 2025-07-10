@@ -5,14 +5,13 @@ mod tui;
 mod shell;
 
 use cli::arg_handler::parse_args;
-use cli::cli_data::{Operation, InitShell};
+use cli::cli_data::Operation;
 use database::database_structs::{Database, DeletedCommands};
 use database::persistence::{
     ensure_data_directory, get_database_path, get_deleted_commands_path, load_database,
     load_deleted_commands, save_database, save_deleted_commands, load_config, save_config, AppConfig
 };
 use ops::add_alias::add_alias;
-use ops::alias_ops::get_aliases_list;
 use ops::delete_suggestion::delete_suggestion;
 use ops::get_suggestions;
 use ops::insert_command::insert_command;
@@ -83,7 +82,7 @@ fn main() {
     }
 
     // Load config for alias file paths
-    let mut config = load_config();
+    let config = load_config();
     let mut alias_file_paths = if let Some(cfg) = &config {
         cfg.alias_file_paths.clone()
     } else {
@@ -136,7 +135,6 @@ fn main() {
                 alias_file_paths.push(cli_path_str.clone());
                 let new_config = AppConfig { alias_file_paths: alias_file_paths.clone() };
                 let _ = save_config(&new_config);
-                config = Some(new_config);
             }
         }
     }
@@ -196,7 +194,7 @@ fn main() {
 
         match &cli.operation {
             Some(Operation::Add { alias, command }) => {
-                use ops::alias_ops::{add_alias_to_multiple_files, get_aliases_from_multiple_files};
+                use ops::alias_ops::add_alias_to_multiple_files;
                 add_alias_to_multiple_files(&alias_file_paths, alias, command);
                 if let Some(first_path) = alias_file_paths.first() {
                     add_alias(db_ref, dc_ref, first_path, alias, command);
@@ -227,7 +225,7 @@ fn main() {
                 }
                 let max_alias_length = aliases.iter().map(|(alias, _)| alias.len()).max().unwrap_or(5).max(5);
                 let max_command_length = aliases.iter().map(|(_, command)| command.len()).max().unwrap_or(7).max(7);
-                let total_width = 3 + max_alias_length + 3 + max_command_length + 2;
+                let _total_width = 3 + max_alias_length + 3 + max_command_length + 2;
                 println!("{}", format!("┌{:─<alias$}┬{:─<cmd$}┐", "", "", alias = max_alias_length + 2, cmd = max_command_length + 2).cyan());
                 println!("{}", format!("│ {:<alias$} │ {:<cmd$} │", "ALIAS", "COMMAND", alias = max_alias_length, cmd = max_command_length).cyan());
                 println!("{}", format!("├{:─<alias$}┼{:─<cmd$}┤", "", "", alias = max_alias_length + 2, cmd = max_command_length + 2).cyan());
