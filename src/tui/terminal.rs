@@ -18,6 +18,7 @@ use ratatui::{
 };
 use std::io;
 use std::path::PathBuf;
+use std::os::unix::fs::PermissionsExt;
 
 pub fn run_tui(alias_file_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     // Ensure data directory exists
@@ -131,21 +132,15 @@ fn handle_operation(
     let alias_file_path = app.alias_file_path.to_string_lossy().to_string();
 
     match operation {
-        Operation::Add { alias } => {
-            if let Some(eq_pos) = alias.find('=') {
-                let alias_name = alias[..eq_pos].trim();
-                let command = alias[eq_pos + 1..].trim();
-                add_alias::add_alias(database, deleted_commands, &alias_file_path, alias_name, command);
-                app.status_message = format!("Added alias: {} = {}", alias_name, command);
-                // Save after adding alias
-                if let Err(e) = save_database(database, db_path) {
-                    eprintln!("Failed to save database: {}", e);
-                }
-                if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
-                    eprintln!("Failed to save deleted commands: {}", e);
-                }
-            } else {
-                app.status_message = "Invalid alias format".to_string();
+        Operation::Add { alias, command } => {
+            add_alias::add_alias(database, deleted_commands, &alias_file_path, &alias, &command);
+            app.status_message = format!("Added alias: {} = {}", alias, command);
+            // Save after adding alias
+            if let Err(e) = save_database(database, db_path) {
+                eprintln!("Failed to save database: {}", e);
+            }
+            if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
+                eprintln!("Failed to save deleted commands: {}", e);
             }
         }
         Operation::Remove { alias } => {
@@ -156,13 +151,16 @@ fn handle_operation(
                 eprintln!("Failed to save deleted commands: {}", e);
             }
         }
-        Operation::Change { alias } => {
-            if let Some(eq_pos) = alias.find('=') {
-                let alias_name = alias[..eq_pos].trim();
-                let command = alias[eq_pos + 1..].trim();
-                remove_alias::remove_alias(deleted_commands, &alias_file_path, alias_name);
-                add_alias::add_alias(database, deleted_commands, &alias_file_path, alias_name, command);
-                app.status_message = format!("Changed alias: {} = {}", alias_name, command);
+        Operation::Change { old_alias, new_alias } => {
+            // First remove the old alias
+            remove_alias::remove_alias(deleted_commands, &alias_file_path, &old_alias);
+            // Then add the new alias with the same command
+            // Note: This assumes we want to keep the same command, just change the alias name
+            // If we need to change both alias and command, we'd need additional logic
+            let aliases = alias_ops::get_aliases_list(&alias_file_path);
+            if let Some((_, command)) = aliases.iter().find(|(alias, _)| alias == &old_alias) {
+                add_alias::add_alias(database, deleted_commands, &alias_file_path, &new_alias, command);
+                app.status_message = format!("Changed alias: {} -> {}", old_alias, new_alias);
                 // Save after changing alias
                 if let Err(e) = save_database(database, db_path) {
                     eprintln!("Failed to save database: {}", e);
@@ -171,34 +169,62 @@ fn handle_operation(
                     eprintln!("Failed to save deleted commands: {}", e);
                 }
             } else {
-                app.status_message = "Invalid alias format".to_string();
+                app.status_message = format!("Alias '{}' not found", old_alias);
             }
         }
         Operation::List => {
             let aliases = alias_ops::get_aliases_list(&alias_file_path);
-            let mut message = "Current aliases:\n".to_string();
-            for (alias, command) in aliases {
-                message.push_str(&format!("{} = {}\n", alias, command));
+            if aliases.is_empty() {
+                app.status_message = "No aliases found.".to_string();
+                return;
             }
+            
+            // Find the longest alias for alignment
+            let max_alias_length = aliases.iter()
+                .map(|(alias, _)| alias.len())
+                .max()
+                .unwrap_or(0);
+            
+            let mut message = "┌─ ALIASES ──────────────────────────────────────────────────────────────┐\n".to_string();
+            message.push_str(&format!("│ {:<width$} │ COMMAND\n", "ALIAS", width = max_alias_length));
+            message.push_str(&format!("├─{}─┼─{}─┤\n", "─".repeat(max_alias_length + 2), "─".repeat(60)));
+            
+            for (alias, command) in &aliases {
+                let formatted_alias = format!("{:<width$}", alias, width = max_alias_length);
+                message.push_str(&format!("│ {} │ {}\n", formatted_alias, command));
+            }
+            
+            message.push_str(&format!("└─{}─┴─{}─┘\n", "─".repeat(max_alias_length + 2), "─".repeat(60)));
+            message.push_str(&format!("Total: {} alias(es)", aliases.len()));
+            
             app.show_popup(message);
         }
         Operation::GetSuggestions { num } => {
-            let suggestions = get_suggestions::get_suggestions(num, database);
+            let suggestions = get_suggestions::get_suggestions_with_aliases(num, database, &alias_file_path);
             let mut message = "Top suggestions:\n".to_string();
-            for (i, cmd) in suggestions.iter().enumerate() {
+            for (i, cmd_with_alias) in suggestions.iter().enumerate() {
                 message.push_str(&format!(
-                    "{}. {} (score: {})\n",
+                    "{}. {} (score: {})",
                     i + 1,
-                    cmd.command_text,
-                    cmd.score
+                    cmd_with_alias.command.command_text,
+                    cmd_with_alias.command.score
                 ));
+                
+                if !cmd_with_alias.alias_suggestions.is_empty() {
+                    message.push_str(" -> aliases: ");
+                    let alias_strings: Vec<String> = cmd_with_alias.alias_suggestions.iter()
+                        .map(|a| format!("{}={} ({})", a.alias, a.command, a.reason))
+                        .collect();
+                    message.push_str(&alias_strings.join(", "));
+                }
+                message.push('\n');
             }
             app.show_popup(message);
             app.load_commands(database);
         }
         Operation::DeleteSuggestion { alias } => {
             delete_suggestion::delete_suggestion(&alias, database, deleted_commands);
-            app.status_message = format!("Deleted suggestion: {}", alias);
+            app.status_message = format!("Deleted suggestions for: {}", alias);
             app.load_commands(database);
             // Save after deleting suggestion
             if let Err(e) = save_database(database, db_path) {

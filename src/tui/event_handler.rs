@@ -248,7 +248,7 @@ impl App {
                     }
 
                     self.status_message = format!("Added alias: {} = {}", alias, command);
-                    Some(Operation::Add { alias: input_value })
+                    Some(Operation::Add { alias: alias.to_string(), command: command.to_string() })
                 } else {
                     self.status_message = "Invalid format. Use: alias=command".to_string();
                     None
@@ -270,18 +270,18 @@ impl App {
                 }
 
                 if let Some(eq_pos) = input_value.find('=') {
-                    let alias = input_value[..eq_pos].trim();
-                    let command = input_value[eq_pos + 1..].trim();
+                    let old_alias = input_value[..eq_pos].trim();
+                    let new_alias = input_value[eq_pos + 1..].trim();
 
-                    if alias.is_empty() || command.is_empty() {
-                        self.status_message = "Both alias and command must be provided".to_string();
+                    if old_alias.is_empty() || new_alias.is_empty() {
+                        self.status_message = "Both old and new alias must be provided".to_string();
                         return None;
                     }
 
-                    self.status_message = format!("Changed alias: {} = {}", alias, command);
-                    Some(Operation::Change { alias: input_value })
+                    self.status_message = format!("Changed alias: {} -> {}", old_alias, new_alias);
+                    Some(Operation::Change { old_alias: old_alias.to_string(), new_alias: new_alias.to_string() })
                 } else {
-                    self.status_message = "Invalid format. Use: alias=new_command".to_string();
+                    self.status_message = "Invalid format. Use: old_alias=new_alias".to_string();
                     None
                 }
             }

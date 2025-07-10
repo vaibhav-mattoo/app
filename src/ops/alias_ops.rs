@@ -8,19 +8,37 @@ use std::io::{BufRead, Write, BufReader};
 // func to get list of aliases from file
 
 pub fn get_aliases(file_path: &str) -> Vec<(String, String)> {
-    let file = File::open(file_path).expect("Could not open alias file");
-    // if file not there, create one
-    if file.metadata().is_err() {
-        File::create(file_path).expect("Could not create alias file");
-        return Vec::new(); // Return empty vector if file was just created
-    }
+    // Try to open the file, create it if it doesn't exist
+    let file = match File::open(file_path) {
+        Ok(file) => file,
+        Err(_) => {
+            // File doesn't exist, create it
+            match File::create(file_path) {
+                Ok(_) => {
+                    println!("Created new alias file: {}", file_path);
+                    return Vec::new();
+                }
+                Err(e) => {
+                    eprintln!("Could not create alias file {}: {}", file_path, e);
+                    return Vec::new();
+                }
+            }
+        }
+    };
+
     let reader = BufReader::new(file);
     let mut aliases = Vec::new();
 
     for line in reader.lines() {
-        let line = line.expect("Could not read line from alias file");
+        let line = match line {
+            Ok(line) => line,
+            Err(e) => {
+                eprintln!("Error reading line from alias file: {}", e);
+                continue;
+            }
+        };
         let line = line.trim();
-        if line.starts_with ("alias ") {
+        if line.starts_with("alias ") {
             let line_in = line[6..].trim();
             // now split by =
             if let Some(eq_index) = line_in.find('=') {
@@ -33,7 +51,7 @@ pub fn get_aliases(file_path: &str) -> Vec<(String, String)> {
                 let command = command.to_string();
                 aliases.push((alias, command));
             } else {
-                println!("Invalid alias format in line: {}", line);
+                eprintln!("Invalid alias format in line: {}", line);
             }
         }
     }
@@ -75,5 +93,50 @@ pub fn remove_alias_from_file(file_path: &str, alias: &str) {
         write_aliases(file_path, aliases);
     } else {
         println!("Alias '{}' not found.", alias);
+    }
+}
+
+pub fn get_aliases_from_multiple_files(file_paths: &[String]) -> Vec<(String, String)> {
+    let mut all_aliases = Vec::new();
+    
+    for file_path in file_paths {
+        let aliases = get_aliases(file_path);
+        all_aliases.extend(aliases);
+    }
+    
+    all_aliases
+}
+
+pub fn add_alias_to_multiple_files(file_paths: &[String], alias: &str, command: &str) {
+    // Check if alias exists in any file
+    let all_aliases = get_aliases_from_multiple_files(file_paths);
+    if all_aliases.iter().any(|(a, _)| a == alias) {
+        println!("Alias '{}' already exists in one of the alias files.", alias);
+        return;
+    }
+    
+    // Add to the first file (primary alias file)
+    if let Some(primary_file) = file_paths.first() {
+        add_alias_to_file(primary_file, alias, command);
+        println!("Added alias '{}' to {}", alias, primary_file);
+    }
+}
+
+pub fn remove_alias_from_multiple_files(file_paths: &[String], alias: &str) {
+    let mut found = false;
+    
+    for file_path in file_paths {
+        let mut aliases = get_aliases(file_path);
+        if let Some(pos) = aliases.iter().position(|(a, _)| a == alias) {
+            aliases.remove(pos);
+            write_aliases(file_path, aliases);
+            println!("Removed alias '{}' from {}", alias, file_path);
+            found = true;
+            break; // Remove from first file where found
+        }
+    }
+    
+    if !found {
+        println!("Alias '{}' not found in any alias file.", alias);
     }
 }
