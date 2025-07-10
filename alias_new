@@ -1,1 +1,2 @@
 alias gp='git push origin main'
+alias gcmtestingandcheckingifitworks='git commit -m 'Testing what happens if I do this''
