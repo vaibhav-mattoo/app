@@ -5,6 +5,33 @@ use super::database_structs::{Database, DeletedCommands};
 
 pub const DB_FILE: &str = "command_database.json";
 pub const DELETED_COMMANDS_FILE: &str = "deleted_commands.json";
+pub const CONFIG_FILE: &str = "config.json";
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct AppConfig {
+    pub alias_file_paths: Vec<String>,
+}
+
+pub fn save_config(config: &AppConfig) -> Result<(), Box<dyn std::error::Error>> {
+    let config_path = get_config_path();
+    let json = serde_json::to_string_pretty(config)?;
+    fs::write(config_path, json)?;
+    Ok(())
+}
+
+pub fn load_config() -> Option<AppConfig> {
+    let config_path = get_config_path();
+    if !Path::new(&config_path).exists() {
+        return None;
+    }
+    let content = fs::read_to_string(config_path).ok()?;
+    serde_json::from_str(&content).ok()
+}
+
+pub fn get_config_path() -> String {
+    let home_dir = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    home_dir.join(".alias_suggestor").join(CONFIG_FILE).to_string_lossy().to_string()
+}
 
 pub fn save_database(db: &Database, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let json = serde_json::to_string_pretty(db)?;

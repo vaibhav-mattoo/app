@@ -57,7 +57,7 @@ impl Database {
                 self.total_num_commands += 1;
                 self.total_score += self.reverse_command_map.get(&command_str).unwrap().score as i64;
             }
-            let threshold: i64 = 250;
+            let threshold: i64 = 10000; // Much higher threshold
             if self.total_score > threshold {
                 self.score_reset();
             }
@@ -97,7 +97,7 @@ impl Database {
             self.command_list.insert(command.clone());
         }
     }
-    let threshold: i64 = 250;
+    let threshold: i64 = 10000; // Much higher threshold
     if self.total_score > threshold {
         self.score_reset();
     }
@@ -113,12 +113,12 @@ impl Database {
     }
 
     pub fn score_reset(&mut self){
-        //iterate through the set & map and reduce the freq of each string by 90% and delete the strings with 0 freq
+        //iterate through the set & map and reduce the freq of each string by 50% and delete the strings with 0 freq
         let mut to_remove = Vec::new();
         let mut num:i32 =0;
         let mut sc:i64=0;
         for (key, value) in self.reverse_command_map.iter_mut() {
-            value.frequency = (value.frequency as f32 * 0.1).round() as i32;
+            value.frequency = (value.frequency as f32 * 0.5).round() as i32; // Reduce by 50% instead of 90%
             self.total_score -= value.score as i64;
             value.score = get_score(&value);
             sc+= value.score as i64;
@@ -129,17 +129,15 @@ impl Database {
             }
             else {num+=1;}
         }
-        println!("Resetting scores, total score: {}, total commands: {}", sc, num);
         self.total_score = sc;
         self.total_num_commands = num;
-        println!("Resetting scores, total score: {}, total commands: {}", self.total_score, self.total_num_commands);
         for key in &to_remove {
             self.reverse_command_map.remove(key);
         }
         let old_set = std::mem::take(&mut self.command_list);
 
         for mut cmd in old_set {
-            cmd.frequency = (cmd.frequency as f32 * 0.1).round() as i32;
+            cmd.frequency = (cmd.frequency as f32 * 0.5).round() as i32; // Reduce by 50% instead of 90%
             cmd.score=get_score(&cmd); 
             if cmd.frequency>0 {self.command_list.insert(cmd);}
         }
