@@ -93,4 +93,15 @@ pub fn ensure_data_directory() -> Result<(), Box<dyn std::error::Error>> {
     }
     
     Ok(())
+}
+
+pub fn get_data_directory() -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    let home_dir = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    let data_dir = home_dir.join(".alias_suggestor");
+    
+    if !data_dir.exists() {
+        fs::create_dir_all(&data_dir)?;
+    }
+    
+    Ok(data_dir)
 } 

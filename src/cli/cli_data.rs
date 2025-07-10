@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -34,4 +34,17 @@ pub enum Operation {
         alias: String,
     },
     Tui,
+    Init {
+        #[arg(value_enum)]
+        shell: InitShell,
+    },
+}
+
+#[derive(ValueEnum, Clone, Debug)]
+pub enum InitShell {
+    Bash,
+    Zsh,
+    Fish,
+    #[clap(alias = "ksh")]
+    Posix,
 }

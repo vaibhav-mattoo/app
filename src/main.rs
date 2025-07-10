@@ -2,9 +2,10 @@ mod cli;
 mod database;
 mod ops;
 mod tui;
+mod shell;
 
 use cli::arg_handler::parse_args;
-use cli::cli_data::Operation;
+use cli::cli_data::{Operation, InitShell};
 use database::database_structs::{Database, DeletedCommands};
 use database::persistence::{
     ensure_data_directory, get_database_path, get_deleted_commands_path, load_database,
@@ -16,6 +17,7 @@ use ops::delete_suggestion::delete_suggestion;
 use ops::get_suggestions;
 use ops::insert_command::insert_command;
 use ops::remove_alias::remove_alias;
+use shell::{ShellOpts, render_shell_init};
 use std::env;
 use tui::run_tui;
 use colored::*;
@@ -307,6 +309,11 @@ fn main() {
                 if let Err(e) = run_tui(tui_path) {
                     eprintln!("{}", format!("TUI error: {}", e).red());
                 }
+            }
+            Some(Operation::Init { shell }) => {
+                let opts = ShellOpts::new();
+                let init_script = render_shell_init(shell.clone(), &opts);
+                println!("{}", init_script);
             }
             None => {}
         }
