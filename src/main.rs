@@ -96,7 +96,7 @@ fn main() {
     if command_strings.len() == 1 {
         // Use the first alias file path for TUI
         let file_path = alias_file_paths.first().unwrap_or(&"/home/fuckotheclown/repos/projects/app/store.aliases".to_string()).clone();
-        if let Err(e) = run_tui(std::path::PathBuf::from(file_path)) {
+        if let Err(e) = run_tui(std::path::PathBuf::from(file_path), alias_file_paths) {
             eprintln!("{}", format!("TUI error: {}", e).red());
         }
         return;
@@ -238,10 +238,39 @@ fn main() {
                 println!("{}", format!("└{:─<alias$}┴{:─<cmd$}┘", "", "", alias = max_alias_length + 2, cmd = max_command_length + 2).cyan());
                 println!("{}", format!("Total: {} alias(es) across {} file(s)", aliases.len(), alias_file_paths.len()).green());
             }
-            Some(Operation::Change { old_alias, new_alias }) => {
-                eprintln!("{}", format!("Change alias from '{}' to '{}' - not yet implemented", old_alias, new_alias).yellow());
+            Some(Operation::Change { old_alias, new_alias, command }) => {
+                use ops::alias_ops::remove_alias_from_multiple_files;
+                use ops::alias_ops::add_alias_to_multiple_files;
+                // First remove the old alias
+                remove_alias_from_multiple_files(&alias_file_paths, old_alias);
+                if let Some(first_path) = alias_file_paths.first() {
+                    remove_alias(dc_ref, first_path, old_alias);
+                }
+                // Then add the new alias with the provided command
+                add_alias_to_multiple_files(&alias_file_paths, new_alias, command);
+                if let Some(first_path) = alias_file_paths.first() {
+                    add_alias(db_ref, dc_ref, first_path, new_alias, command);
+                }
+                if let Err(e) = save_database(db_ref, &db_path) {
+                    eprintln!("{}", format!("Failed to save database: {}", e).red());
+                }
+                if let Err(e) = save_deleted_commands(dc_ref, &deleted_commands_path) {
+                    eprintln!("{}", format!("Failed to save deleted commands: {}", e).red());
+                }
             }
             Some(Operation::GetSuggestions { num }) => {
+                // Get total number of commands in the database
+                let total_commands = db_ref.command_list.len();
+                if let Some(n) = num {
+                    if *n == 0 {
+                        eprintln!("{}", "Number of suggestions must be greater than 0.".red());
+                        return;
+                    }
+                    if *n > total_commands {
+                        eprintln!("{}", format!("Requested number of suggestions (n = {}) exceeds total available commands ({}).", n, total_commands).red());
+                        return;
+                    }
+                }
                 let list = get_suggestions::get_suggestions_with_aliases(*num, db_ref, alias_file_paths.first().unwrap_or(&"/home/fuckotheclown/repos/projects/app/store.aliases".to_string()));
                 
                 if list.is_empty() {
@@ -304,7 +333,7 @@ fn main() {
                 let tui_path = cli.alias_file_path.clone().unwrap_or_else(|| {
                     alias_file_paths.first().unwrap_or(&"/home/fuckotheclown/repos/projects/app/store.aliases".to_string()).into()
                 });
-                if let Err(e) = run_tui(tui_path) {
+                if let Err(e) = run_tui(tui_path, alias_file_paths) {
                     eprintln!("{}", format!("TUI error: {}", e).red());
                 }
             }

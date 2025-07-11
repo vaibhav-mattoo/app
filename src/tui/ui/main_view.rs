@@ -22,7 +22,10 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
                     format!("Score: {} | ", cmd.score),
                     Style::default().fg(Color::Green),
                 ),
-                Span::raw(&cmd.command_text),
+                Span::styled(
+                    &cmd.command_text,
+                    Style::default().fg(Color::Blue),
+                ),
             ]))
         })
         .collect();
@@ -34,20 +37,40 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 
     f.render_stateful_widget(commands_list, chunks[0], &mut app.list_state.clone());
 
-    let controls = Paragraph::new(
-        "Controls:\n\n\
-        a - Add alias\n\
-        r - Remove alias\n\
-        c - Change alias\n\
-        s - Get suggestions\n\
-        d - Delete suggestion\n\
-        l - List aliases\n\
-        q - Quit\n\n\
-        ↑/↓ - Navigate\n\
-        Esc - Cancel/Close",
-    )
-    .block(Block::default().borders(Borders::ALL).title("Controls"))
-    .wrap(Wrap { trim: true });
+    let controls_lines = vec![
+        Line::from(vec![
+            Span::styled("a", Style::default().fg(Color::Magenta).add_modifier(ratatui::style::Modifier::BOLD)),
+            Span::raw(" - Add alias"),
+        ]),
+        Line::from(vec![
+            Span::styled("r", Style::default().fg(Color::Magenta).add_modifier(ratatui::style::Modifier::BOLD)),
+            Span::raw(" - Remove alias"),
+        ]),
+        Line::from(vec![
+            Span::styled("c", Style::default().fg(Color::Magenta).add_modifier(ratatui::style::Modifier::BOLD)),
+            Span::raw(" - Change alias"),
+        ]),
+        Line::from(vec![
+            Span::styled("l", Style::default().fg(Color::Magenta).add_modifier(ratatui::style::Modifier::BOLD)),
+            Span::raw(" - List aliases"),
+        ]),
+        Line::from(vec![
+            Span::styled("q", Style::default().fg(Color::Magenta).add_modifier(ratatui::style::Modifier::BOLD)),
+            Span::raw(" - Quit"),
+        ]),
+        Line::from(vec![]),
+        Line::from(vec![
+            Span::styled("↑/↓", Style::default().fg(Color::Magenta).add_modifier(ratatui::style::Modifier::BOLD)),
+            Span::raw(" - Navigate"),
+        ]),
+        Line::from(vec![
+            Span::styled("Esc", Style::default().fg(Color::Magenta).add_modifier(ratatui::style::Modifier::BOLD)),
+            Span::raw(" - Cancel/Close"),
+        ]),
+    ];
+    let controls = Paragraph::new(controls_lines)
+        .block(Block::default().borders(Borders::ALL).title("Controls"))
+        .wrap(Wrap { trim: true });
 
     f.render_widget(controls, chunks[1]);
 }

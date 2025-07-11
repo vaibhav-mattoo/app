@@ -4,7 +4,7 @@ use crate::database::persistence::{
     ensure_data_directory, get_database_path, get_deleted_commands_path, load_database,
     load_deleted_commands, save_database, save_deleted_commands,
 };
-use crate::ops::{alias_ops, add_alias , remove_alias, delete_suggestion, get_suggestions};
+use crate::ops::{add_alias , remove_alias, delete_suggestion};
 use crate::tui::app::App;
 use crate::tui::ui::render_ui;
 use ratatui::crossterm::{
@@ -20,7 +20,7 @@ use std::io;
 use std::path::PathBuf;
 
 
-pub fn run_tui(alias_file_path: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+pub fn run_tui(alias_file_path: PathBuf, alias_file_paths: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
     // Ensure data directory exists
     if let Err(e) = ensure_data_directory() {
         eprintln!("Failed to create data directory: {}", e);
@@ -75,7 +75,7 @@ pub fn run_tui(alias_file_path: PathBuf) -> Result<(), Box<dyn std::error::Error
     let mut terminal_guard = TerminalGuard { terminal };
 
     // Create app and load initial data
-    let mut app = App::new(alias_file_path.clone());
+    let mut app = App::new(alias_file_path.clone(), alias_file_paths);
     app.load_commands(&mut database);
 
     // Run the app
@@ -104,6 +104,8 @@ fn run_app<B: Backend>(
     deleted_commands_path: &str,
 ) -> io::Result<()> {
     loop {
+        // Clear the screen before drawing to prevent overlap issues
+        terminal.clear()?;
         terminal.draw(|f| render_ui(f, app))?;
 
         if let Event::Key(key) = event::read()? {
@@ -129,11 +131,13 @@ fn handle_operation(
     db_path: &str,
     deleted_commands_path: &str,
 ) {
-    let alias_file_path = app.alias_file_path.to_string_lossy().to_string();
-
     match operation {
         Operation::Add { alias, command } => {
-            add_alias::add_alias(database, deleted_commands, &alias_file_path, &alias, &command);
+            use crate::ops::alias_ops::add_alias_to_multiple_files;
+            add_alias_to_multiple_files(&app.alias_file_paths, &alias, &command);
+            if let Some(first_path) = app.alias_file_paths.first() {
+                add_alias::add_alias(database, deleted_commands, first_path, &alias, &command);
+            }
             app.status_message = format!("Added alias: {} = {}", alias, command);
             // Save after adding alias
             if let Err(e) = save_database(database, db_path) {
@@ -144,83 +148,42 @@ fn handle_operation(
             }
         }
         Operation::Remove { alias } => {
-            remove_alias::remove_alias(deleted_commands, &alias_file_path, &alias);
+            use crate::ops::alias_ops::remove_alias_from_multiple_files;
+            remove_alias_from_multiple_files(&app.alias_file_paths, &alias);
+            if let Some(first_path) = app.alias_file_paths.first() {
+                remove_alias::remove_alias(deleted_commands, first_path, &alias);
+            }
             app.status_message = format!("Removed alias: {}", alias);
             // Save after removing alias
             if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
                 eprintln!("Failed to save deleted commands: {}", e);
             }
         }
-        Operation::Change { old_alias, new_alias } => {
+        Operation::Change { old_alias, new_alias, command } => {
             // First remove the old alias
-            remove_alias::remove_alias(deleted_commands, &alias_file_path, &old_alias);
-            // Then add the new alias with the same command
-            // Note: This assumes we want to keep the same command, just change the alias name
-            // If we need to change both alias and command, we'd need additional logic
-            let aliases = alias_ops::get_aliases_list(&alias_file_path);
-            if let Some((_, command)) = aliases.iter().find(|(alias, _)| alias == &old_alias) {
-                add_alias::add_alias(database, deleted_commands, &alias_file_path, &new_alias, command);
-                app.status_message = format!("Changed alias: {} -> {}", old_alias, new_alias);
-                // Save after changing alias
-                if let Err(e) = save_database(database, db_path) {
-                    eprintln!("Failed to save database: {}", e);
-                }
-                if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
-                    eprintln!("Failed to save deleted commands: {}", e);
-                }
-            } else {
-                app.status_message = format!("Alias '{}' not found", old_alias);
+            use crate::ops::alias_ops::remove_alias_from_multiple_files;
+            remove_alias_from_multiple_files(&app.alias_file_paths, &old_alias);
+            if let Some(first_path) = app.alias_file_paths.first() {
+                remove_alias::remove_alias(deleted_commands, first_path, &old_alias);
+            }
+            // Then add the new alias with the provided command
+            use crate::ops::alias_ops::add_alias_to_multiple_files;
+            add_alias_to_multiple_files(&app.alias_file_paths, &new_alias, &command);
+            if let Some(first_path) = app.alias_file_paths.first() {
+                add_alias::add_alias(database, deleted_commands, first_path, &new_alias, &command);
+            }
+            app.status_message = format!("Changed alias: {} = {} → {} = {}", old_alias, command, new_alias, command);
+            // Save after changing alias
+            if let Err(e) = save_database(database, db_path) {
+                eprintln!("Failed to save database: {}", e);
+            }
+            if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
+                eprintln!("Failed to save deleted commands: {}", e);
             }
         }
         Operation::List => {
-            let aliases = alias_ops::get_aliases_list(&alias_file_path);
-            if aliases.is_empty() {
-                app.status_message = "No aliases found.".to_string();
-                return;
-            }
-            
-            // Find the longest alias for alignment
-            let max_alias_length = aliases.iter()
-                .map(|(alias, _)| alias.len())
-                .max()
-                .unwrap_or(0);
-            
-            let mut message = "┌─ ALIASES ──────────────────────────────────────────────────────────────┐\n".to_string();
-            message.push_str(&format!("│ {:<width$} │ COMMAND\n", "ALIAS", width = max_alias_length));
-            message.push_str(&format!("├─{}─┼─{}─┤\n", "─".repeat(max_alias_length + 2), "─".repeat(60)));
-            
-            for (alias, command) in &aliases {
-                let formatted_alias = format!("{:<width$}", alias, width = max_alias_length);
-                message.push_str(&format!("│ {} │ {}\n", formatted_alias, command));
-            }
-            
-            message.push_str(&format!("└─{}─┴─{}─┘\n", "─".repeat(max_alias_length + 2), "─".repeat(60)));
-            message.push_str(&format!("Total: {} alias(es)", aliases.len()));
-            
-            app.show_popup(message);
-        }
-        Operation::GetSuggestions { num } => {
-            let suggestions = get_suggestions::get_suggestions_with_aliases(num, database, &alias_file_path);
-            let mut message = "Top suggestions:\n".to_string();
-            for (i, cmd_with_alias) in suggestions.iter().enumerate() {
-                message.push_str(&format!(
-                    "{}. {} (score: {})",
-                    i + 1,
-                    cmd_with_alias.command.command_text,
-                    cmd_with_alias.command.score
-                ));
-                
-                if !cmd_with_alias.alias_suggestions.is_empty() {
-                    message.push_str(" -> aliases: ");
-                    let alias_strings: Vec<String> = cmd_with_alias.alias_suggestions.iter()
-                        .map(|a| format!("{}={} ({})", a.alias, a.command, a.reason))
-                        .collect();
-                    message.push_str(&alias_strings.join(", "));
-                }
-                message.push('\n');
-            }
-            app.show_popup(message);
-            app.load_commands(database);
+            // List operation is now handled in the TUI as a separate mode
+            app.status_message = "List operation handled in TUI mode".to_string();
         }
         Operation::DeleteSuggestion { alias } => {
             delete_suggestion::delete_suggestion(&alias, database, deleted_commands);
@@ -233,6 +196,10 @@ fn handle_operation(
             if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
                 eprintln!("Failed to save deleted commands: {}", e);
             }
+        }
+        Operation::GetSuggestions { .. } => {
+            // Get suggestions is not available in TUI mode
+            app.status_message = "Get suggestions not available in TUI mode".to_string();
         }
         Operation::Tui => {
             // Already in TUI mode, do nothing

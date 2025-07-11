@@ -25,9 +25,10 @@ pub enum Operation {
     Change {
         old_alias: String,
         new_alias: String,
+        command: String,
     },
     GetSuggestions {
-        #[arg(short = 't', long)]
+        #[arg(short = 'n', long)]
         num: Option<usize>,
     },
     DeleteSuggestion {
