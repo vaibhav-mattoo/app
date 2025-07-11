@@ -39,6 +39,7 @@ pub enum Operation {
         #[arg(value_enum)]
         shell: InitShell,
     },
+    Reload,
 }
 
 #[derive(ValueEnum, Clone, Debug)]
