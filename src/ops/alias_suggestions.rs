@@ -41,10 +41,34 @@ impl AliasSuggester {
                     for entry in entries.flatten() {
                         if let Ok(metadata) = entry.metadata() {
                             if metadata.is_file() {
-                                // Check if file is executable (simplified check)
-                                if let Some(name) = entry.file_name().to_str() {
-                                    commands.insert(name.to_string());
+                                // Check if file is executable (check execute permissions)
+                                use std::os::unix::fs::PermissionsExt;
+                                if metadata.permissions().mode() & 0o111 != 0 {
+                                    if let Some(name) = entry.file_name().to_str() {
+                                        commands.insert(name.to_string());
+                                    }
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Get shell aliases using the user's current shell from $SHELL
+        if let Ok(shell_path) = std::env::var("SHELL") {
+            if let Ok(output) = std::process::Command::new(shell_path)
+                .arg("-i")
+                .arg("-c")
+                .arg("alias")
+                .output() {
+                if let Ok(alias_output) = String::from_utf8(output.stdout) {
+                    for line in alias_output.lines() {
+                        if let Some(alias_name) = line.split('=').next() {
+                            // Remove any quotes and whitespace
+                            let clean_alias = alias_name.trim_matches('"').trim_matches('\'').trim();
+                            if !clean_alias.is_empty() {
+                                commands.insert(clean_alias.to_string());
                             }
                         }
                     }
@@ -61,15 +85,27 @@ impl AliasSuggester {
         // Generate different types of suggestions
         suggestions.extend(self.generate_semantic_aliases(command));
         suggestions.extend(self.generate_abbreviation_aliases(command));
-        suggestions.extend(self.generate_acronym_aliases(command));
+        suggestions.extend(self.generate_vowel_removal_aliases(command));
         suggestions.extend(self.generate_combined_aliases(command));
+        suggestions.extend(self.generate_single_word_aliases(command));
+        suggestions.extend(self.generate_truncated_aliases(command));
+        suggestions.extend(self.generate_syllable_aliases(command));
+        suggestions.extend(self.generate_phonetic_aliases(command));
+        suggestions.extend(self.generate_keyboard_pattern_aliases(command));
+        suggestions.extend(self.generate_smart_prefix_aliases(command));
+        suggestions.extend(self.generate_common_pattern_aliases(command));
         
         // Filter out conflicts and sort by priority
         suggestions.retain(|s| !self.has_conflicts(&s.alias));
+        
+        // Remove duplicates based on alias name
+        let mut seen = std::collections::HashSet::new();
+        suggestions.retain(|s| seen.insert(s.alias.clone()));
+        
         suggestions.sort_by(|a, b| self.get_priority(b).cmp(&self.get_priority(a)));
         
-        // Limit to top 3 suggestions
-        suggestions.into_iter().take(3).collect()
+        // Show all suggestions (no top 3 limit)
+        suggestions
     }
 
     fn generate_semantic_aliases(&self, command: &str) -> Vec<AliasSuggestion> {
@@ -350,42 +386,6 @@ impl AliasSuggester {
             });
         }
 
-        // Generate variations with numbers if needed
-        if abbreviation.len() >= 2 {
-            for i in 1..=3 {
-                let variation = format!("{}{}", abbreviation, i);
-                suggestions.push(AliasSuggestion {
-                    alias: variation,
-                    command: command.to_string(),
-                    reason: format!("Abbreviation variation {}", i),
-                });
-            }
-        }
-
-        suggestions
-    }
-
-    fn generate_acronym_aliases(&self, command: &str) -> Vec<AliasSuggestion> {
-        let mut suggestions = Vec::new();
-        let parts: Vec<&str> = command.split_whitespace().collect();
-        
-        if parts.len() < 2 {
-            return suggestions;
-        }
-
-        // Create acronym from first letters
-        let acronym: String = parts.iter()
-            .map(|part| part.chars().next().unwrap_or('x'))
-            .collect();
-
-        if acronym.len() >= 2 && acronym.len() <= 4 {
-            suggestions.push(AliasSuggestion {
-                alias: acronym,
-                command: command.to_string(),
-                reason: "Acronym".to_string(),
-            });
-        }
-
         suggestions
     }
 
@@ -429,8 +429,153 @@ impl AliasSuggester {
         suggestions
     }
 
+    fn generate_single_word_aliases(&self, command: &str) -> Vec<AliasSuggestion> {
+        let mut suggestions = Vec::new();
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        
+        // Only handle single-word commands
+        if parts.len() != 1 {
+            return suggestions;
+        }
+        
+        let tool = parts[0];
+        
+        // Skip if it's a relative path command
+        if tool.starts_with("./") || tool.starts_with("../") {
+            return suggestions;
+        }
+        
+        // Generate various aliases for single-word commands
+        if tool.len() > 3 {
+            // Take first 3 characters
+            let abbrev = tool.chars().take(3).collect::<String>();
+            suggestions.push(AliasSuggestion {
+                alias: abbrev,
+                command: command.to_string(),
+                reason: "3-letter abbreviation".to_string(),
+            });
+        }
+        
+        // Take first 2 characters if tool is longer than 2
+        if tool.len() > 2 {
+            let abbrev = tool.chars().take(2).collect::<String>();
+            suggestions.push(AliasSuggestion {
+                alias: abbrev,
+                command: command.to_string(),
+                reason: "2-letter abbreviation".to_string(),
+            });
+        }
+        
+        // Generate alias with first and last character
+        if tool.len() > 2 {
+            let first = tool.chars().next().unwrap_or('x');
+            let last = tool.chars().last().unwrap_or('x');
+            let fl_alias = format!("{}{}", first, last);
+            suggestions.push(AliasSuggestion {
+                alias: fl_alias,
+                command: command.to_string(),
+                reason: "First-last character".to_string(),
+            });
+        }
+        
+
+        
+        // For compound words like "lazygit", try to extract meaningful parts
+        if tool.contains("git") {
+            suggestions.push(AliasSuggestion {
+                alias: "lg".to_string(),
+                command: command.to_string(),
+                reason: "LazyGit abbreviation".to_string(),
+            });
+        }
+        
+        if tool.contains("docker") {
+            suggestions.push(AliasSuggestion {
+                alias: "dk".to_string(),
+                command: command.to_string(),
+                reason: "Docker abbreviation".to_string(),
+            });
+        }
+        
+        if tool.contains("node") {
+            suggestions.push(AliasSuggestion {
+                alias: "nd".to_string(),
+                command: command.to_string(),
+                reason: "Node abbreviation".to_string(),
+            });
+        }
+        
+        suggestions
+    }
+
+    fn generate_vowel_removal_aliases(&self, command: &str) -> Vec<AliasSuggestion> {
+        let mut suggestions = Vec::new();
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        if parts.is_empty() { return suggestions; }
+        
+        // Process each word: remove vowels and limit to 3 consonants per word
+        let mut processed_parts = Vec::new();
+        for word in &parts {
+            let consonants: String = word.chars()
+                .filter(|c| !"aeiouAEIOU".contains(*c))
+                .collect();
+            
+            // Limit to 3 consonants per word
+            let limited = consonants.chars().take(3).collect::<String>();
+            if !limited.is_empty() {
+                processed_parts.push(limited);
+            }
+        }
+        
+        // Combine all processed parts
+        if !processed_parts.is_empty() {
+            let combined: String = processed_parts.join("");
+            
+            // Truncate if too long (max 8 characters total)
+            let final_alias = if combined.len() > 8 {
+                combined.chars().take(8).collect::<String>()
+            } else {
+                combined
+            };
+            
+            // Only add if it's different from the original command and has at least 2 characters
+            if final_alias.len() >= 2 && final_alias != command {
+                suggestions.push(AliasSuggestion {
+                    alias: final_alias,
+                    command: command.to_string(),
+                    reason: "Vowel Removal".to_string(),
+                });
+            }
+        }
+        
+        suggestions
+    }
+
+    fn generate_truncated_aliases(&self, command: &str) -> Vec<AliasSuggestion> {
+        let mut suggestions = Vec::new();
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        if parts.is_empty() { return suggestions; }
+        let tool = parts[0];
+        for len in 2..=tool.len().min(5) {
+            let trunc = tool.chars().take(len).collect::<String>();
+            if trunc != tool {
+                suggestions.push(AliasSuggestion {
+                    alias: trunc,
+                    command: command.to_string(),
+                    reason: format!("Truncated to {} chars", len),
+                });
+            }
+        }
+        suggestions
+    }
+
+    pub fn debug_system_commands(&self) {
+        println!("System commands detected: {:?}", self.system_commands);
+        println!("Existing aliases: {:?}", self.existing_aliases);
+    }
+
     fn has_conflicts(&self, alias: &str) -> bool {
-        // Check if alias already exists
+        // Check if alias already exists in our alias files
         if self.existing_aliases.contains(alias) {
             return true;
         }
@@ -451,21 +596,270 @@ impl AliasSuggester {
     fn get_priority(&self, suggestion: &AliasSuggestion) -> i32 {
         let mut priority = 0;
         
-        // Higher priority for semantic aliases
-        if suggestion.reason.contains("Git") || suggestion.reason.contains("Docker") || suggestion.reason.contains("NPM") {
-            priority += 10;
+        // Priority based on suggestion type (higher number = higher priority)
+        match suggestion.reason.as_str() {
+            // Semantic aliases (tool-specific) - highest priority
+            reason if reason.contains("Git") || reason.contains("Docker") || reason.contains("NPM") || reason.contains("SSH") => {
+                priority += 100;
+            }
+            // Abbreviation aliases - second priority
+            "Abbreviation" => {
+                priority += 90;
+            }
+            // Vowel removal - third priority
+            "Vowel Removal" => {
+                priority += 80;
+            }
+            // Combined aliases - fourth priority
+            reason if reason.contains("combination") => {
+                priority += 70;
+            }
+            // Syllable-based - fifth priority
+            "Syllable-based" => {
+                priority += 65;
+            }
+            // Smart prefixes/suffixes - sixth priority
+            reason if reason.contains("Remove prefix") || reason.contains("Remove suffix") => {
+                priority += 60;
+            }
+            // Single word aliases - seventh priority
+            reason if reason.contains("abbreviation") || reason.contains("First-last") || reason.contains("LazyGit") || reason.contains("Docker") || reason.contains("Node") => {
+                priority += 55;
+            }
+            // Phonetic aliases - eighth priority
+            "Phonetic" => {
+                priority += 50;
+            }
+            // Common patterns - ninth priority
+            reason if reason.contains("Remove duplicates") || reason.contains("Smart consonants") => {
+                priority += 45;
+            }
+            // Keyboard patterns - tenth priority
+            "Keyboard pattern" => {
+                priority += 40;
+            }
+            // Truncated aliases - lowest priority
+            reason if reason.contains("Truncated") => {
+                priority += 35;
+            }
+            _ => {
+                priority += 30; // Default priority for unknown types
+            }
         }
         
-        // Higher priority for shorter aliases
+        // Higher priority for shorter aliases within the same type
         priority += 10 - suggestion.alias.len() as i32;
-        
-        // Higher priority for abbreviations over acronyms
-        if suggestion.reason == "Abbreviation" {
-            priority += 5;
-        }
         
         priority
     }
 
+    fn generate_syllable_aliases(&self, command: &str) -> Vec<AliasSuggestion> {
+        let mut suggestions = Vec::new();
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        if parts.is_empty() { return suggestions; }
+        
+        for word in &parts {
+            if word.len() > 3 {
+                // Extract syllables based on vowel-consonant patterns
+                let syllables = self.extract_syllables(word);
+                if syllables.len() >= 2 {
+                    // Take first letter of each syllable
+                    let syllable_alias: String = syllables.iter()
+                        .map(|s| s.chars().next().unwrap_or('x'))
+                        .collect();
+                    
+                    if syllable_alias.len() >= 2 && syllable_alias.len() <= 4 {
+                        suggestions.push(AliasSuggestion {
+                            alias: syllable_alias,
+                            command: command.to_string(),
+                            reason: "Syllable-based".to_string(),
+                        });
+                    }
+                }
+            }
+        }
+        
+        suggestions
+    }
 
+    fn generate_phonetic_aliases(&self, command: &str) -> Vec<AliasSuggestion> {
+        let mut suggestions = Vec::new();
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        if parts.is_empty() { return suggestions; }
+        
+        for word in &parts {
+            if word.len() > 2 {
+                // Common phonetic substitutions
+                let phonetic = word
+                    .replace("ph", "f")
+                    .replace("ck", "k")
+                    .replace("qu", "kw")
+                    .replace("x", "ks")
+                    .replace("ch", "c")
+                    .replace("sh", "s")
+                    .replace("th", "t");
+                
+                if phonetic != *word && phonetic.len() >= 2 && phonetic.len() <= 6 {
+                    suggestions.push(AliasSuggestion {
+                        alias: phonetic,
+                        command: command.to_string(),
+                        reason: "Phonetic".to_string(),
+                    });
+                }
+            }
+        }
+        
+        suggestions
+    }
+
+    fn generate_keyboard_pattern_aliases(&self, command: &str) -> Vec<AliasSuggestion> {
+        let mut suggestions = Vec::new();
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        if parts.is_empty() { return suggestions; }
+        
+        for word in &parts {
+            if word.len() > 2 {
+                // Common keyboard patterns (adjacent keys)
+                let keyboard_pattern = self.generate_keyboard_pattern(word);
+                if keyboard_pattern.len() >= 2 && keyboard_pattern.len() <= 4 {
+                    suggestions.push(AliasSuggestion {
+                        alias: keyboard_pattern,
+                        command: command.to_string(),
+                        reason: "Keyboard pattern".to_string(),
+                    });
+                }
+            }
+        }
+        
+        suggestions
+    }
+
+    fn generate_smart_prefix_aliases(&self, command: &str) -> Vec<AliasSuggestion> {
+        let mut suggestions = Vec::new();
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        if parts.is_empty() { return suggestions; }
+        
+        for word in &parts {
+            if word.len() > 3 {
+                // Common prefixes
+                let prefixes = ["un", "re", "pre", "post", "anti", "pro", "sub", "super", "inter"];
+                for prefix in &prefixes {
+                    if word.starts_with(prefix) {
+                        let without_prefix = &word[prefix.len()..];
+                        if without_prefix.len() >= 2 {
+                            suggestions.push(AliasSuggestion {
+                                alias: without_prefix.to_string(),
+                                command: command.to_string(),
+                                reason: format!("Remove prefix '{}'", prefix),
+                            });
+                        }
+                    }
+                }
+                
+                // Common suffixes
+                let suffixes = ["ing", "ed", "er", "est", "ly", "tion", "sion", "ment"];
+                for suffix in &suffixes {
+                    if word.ends_with(suffix) {
+                        let without_suffix = &word[..word.len() - suffix.len()];
+                        if without_suffix.len() >= 2 {
+                            suggestions.push(AliasSuggestion {
+                                alias: without_suffix.to_string(),
+                                command: command.to_string(),
+                                reason: format!("Remove suffix '{}'", suffix),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        suggestions
+    }
+
+    fn generate_common_pattern_aliases(&self, command: &str) -> Vec<AliasSuggestion> {
+        let mut suggestions = Vec::new();
+        let parts: Vec<&str> = command.split_whitespace().collect();
+        if parts.is_empty() { return suggestions; }
+        
+        for word in &parts {
+            if word.len() > 3 {
+                // Double letter patterns (keep one)
+                let mut prev_char = '\0';
+                let mut deduplicated = String::new();
+                for c in word.chars() {
+                    if c != prev_char {
+                        deduplicated.push(c);
+                        prev_char = c;
+                    }
+                }
+                
+                if deduplicated.len() >= 2 && deduplicated != *word {
+                    suggestions.push(AliasSuggestion {
+                        alias: deduplicated,
+                        command: command.to_string(),
+                        reason: "Remove duplicates".to_string(),
+                    });
+                }
+                
+                // Keep only consonants in specific positions
+                if word.len() > 4 {
+                    let consonants: Vec<char> = word.chars()
+                        .filter(|c| !"aeiouAEIOU".contains(*c))
+                        .collect();
+                    
+                    if consonants.len() >= 3 {
+                        let smart_consonants: String = consonants.iter()
+                            .take(3)
+                            .collect();
+                        
+                        suggestions.push(AliasSuggestion {
+                            alias: smart_consonants,
+                            command: command.to_string(),
+                            reason: "Smart consonants".to_string(),
+                        });
+                    }
+                }
+            }
+        }
+        
+        suggestions
+    }
+
+    fn extract_syllables(&self, word: &str) -> Vec<String> {
+        let mut syllables = Vec::new();
+        let mut current_syllable = String::new();
+        let mut prev_vowel = false;
+        
+        for c in word.chars() {
+            let is_vowel = "aeiouAEIOU".contains(c);
+            
+            if is_vowel {
+                current_syllable.push(c);
+                prev_vowel = true;
+            } else {
+                if prev_vowel && !current_syllable.is_empty() {
+                    // End of syllable
+                    syllables.push(current_syllable.clone());
+                    current_syllable.clear();
+                }
+                current_syllable.push(c);
+                prev_vowel = false;
+            }
+        }
+        
+        if !current_syllable.is_empty() {
+            syllables.push(current_syllable);
+        }
+        
+        syllables
+    }
+
+    fn generate_keyboard_pattern(&self, word: &str) -> String {
+        // Simple keyboard pattern: take every other character
+        word.chars()
+            .enumerate()
+            .filter(|(i, _)| i % 2 == 0)
+            .map(|(_, c)| c)
+            .collect()
+    }
 } 

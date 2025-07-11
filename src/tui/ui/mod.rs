@@ -32,10 +32,16 @@ pub fn render_ui(f: &mut Frame, app: &App) {
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(header, chunks[0]);
 
-    // Main content based on mode
-    match app.mode {
-        AppMode::Main => main_view::render(f, app, chunks[1]),
-        _ => input_view::render(f, app, chunks[1]),
+    // Main content based on mode or popup
+    if app.show_command_details_popup {
+        crate::tui::ui::popup::render_command_details_popup(f, app);
+    } else {
+        match app.mode {
+            AppMode::Main => main_view::render(f, app, chunks[1]),
+            AppMode::AddAliasStep1 | AppMode::AddAliasStep2 | AppMode::AddAliasConfirmation => input_view::render(f, app, chunks[1]),
+            AppMode::RemoveAliasStep1 | AppMode::RemoveAliasConfirmation => input_view::render(f, app, chunks[1]),
+            _ => input_view::render(f, app, chunks[1]),
+        }
     }
 
     // Status bar
