@@ -32,9 +32,6 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-latest
             ext: tar.gz
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            ext: zip
 
     runs-on: ${{ matrix.os }}
     steps:
