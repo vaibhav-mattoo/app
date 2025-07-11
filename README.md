@@ -1,59 +1,56 @@
-# Alman - Intelligent Alias Manager
+# alman - Intelligent Alias Manager
 
-A powerful command-line tool and TUI for managing shell aliases with intelligent suggestions based on your command history.
+A command-line tool and TUI for managing shell aliases with intelligent suggestions based on your command history. Alman helps you organize, create, and manage aliases across multiple files and shells, making your workflow faster and smarter.
 
-## Features
+## Use Case
 
-- 🎯 **Smart Alias Suggestions**: Get intelligent alias suggestions based on your command usage patterns
-- 🖥️ **Interactive TUI**: Beautiful terminal user interface for managing aliases
-- 📊 **Command Analytics**: Track command frequency and usage patterns
-- ⚡ **One-Click Alias Creation**: Apply a suggestion to your shell config in one keystroke
-- 🔄 **Multi-Shell Support**: Works with bash, zsh, fish, and POSIX shells
-- 📁 **Multiple Alias Files**: Manage aliases across multiple files
-- 🎨 **Colored Output**: Beautiful colored CLI output for better readability
-- 🔄 **Automatic Alias Loading**: Aliases are automatically sourced in your shell
+When you want to efficiently manage and discover useful shell aliases, Alman makes it effortless. Instead of manually editing alias files, you can add, remove, list, and get intelligent suggestions for aliases, all from the command line or an interactive TUI.
 
 ## Installation
+
+### Universal Install Script
+
+The easiest way to install `alman` on any system:
+
+```bash
+curl -sSfL https://raw.githubusercontent.com/vaibhav-mattoo/alman/main/install.sh | sh
+```
+
+This script will automatically detect your system and install the appropriate binary.
+
+Remember to add `~/.local/bin` to your `$PATH` if prompted by the install script, by adding `export PATH="$HOME/.local/bin:$PATH"` in the end of your shell config (~/.bashrc, ~/.zshrc etc).
+
+### From Cargo
+
+```bash
+cargo install alman
+```
 
 ### From Source
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/vaibhav-mattoo/alman.git
 cd alman
-cargo build --release
+cargo install --path .
 ```
 
-### Shell Integration
+## Quick Start
 
-After building, integrate with your shell:
-
-```bash
-# For bash
-eval "$(./target/release/alman init bash)"
-
-# For zsh
-eval "$(./target/release/alman init zsh)"
-
-# For fish
-./target/release/alman init fish | source
-
-# For POSIX shells (ksh, dash, etc.)
-eval "$(./target/release/alman init posix)"
-```
-
-**What this does:**
-- Sets up command tracking for intelligent suggestions
-- Automatically sources all your alias files on shell startup
-- Provides `alman_source_aliases` function to reload aliases when they change
-
-## Usage
-
-### Command Line Interface
+### Interactive Mode
+Launch the interactive alias manager:
 
 ```bash
-# Launch TUI (default)
 alman
+# or
+alman tui
+```
 
+Navigate with arrow keys or `jk`, select aliases, and manage them interactively.
+
+### Command Line Mode
+Add, remove, list, and get suggestions for aliases directly from the command line:
+
+```bash
 # Add an alias
 alman add -c "git status" gs
 
@@ -65,71 +62,114 @@ alman list
 
 # Get alias suggestions
 alman get-suggestions -n 10
+```
 
-# Change an alias
-alman change old-alias new-alias "git status"
+## Usage Examples
 
-# Delete suggestions for a command
+### Basic Usage
+
+```bash
+# Add a new alias
+alman add -c "ls -la" ll
+
+# Remove an alias
+alman remove ll
+
+# List all aliases
+alman list
+
+# Get intelligent suggestions
+alman get-suggestions -n 5
+```
+
+### Advanced Usage
+
+```bash
+# Change an alias and its command
+alman change old-alias new-alias "new command"
+
+# Delete suggestions for an alias
 alman delete-suggestion gs
 
-# Initialize shell integration
-alman init bash
-
-# Reload aliases in current shell (after adding/removing aliases)
-alman reload
+# Use a specific alias file
+alman --alias-file-path ~/.my-aliases add -c "htop" h
 ```
 
-### TUI Controls
+## Interactive TUI Mode
 
-- **Navigation**: Arrow keys or `j`/`k`
-- **Selection**: Enter
-- **Search**: Type to filter commands
-- **Add Alias**: `a`
-- **Remove Alias**: `r`
-- **List Aliases**: `l`
-- **Quit**: `q` or `Ctrl+C`
+The Terminal User Interface (TUI) provides an intuitive way to browse, add, remove, and change aliases:
 
-### Working with Aliases
+### Navigation
+- **Arrow keys** or **jk**: Move cursor
+- **Enter**: Select
+- **a**: Add alias
+- **r**: Remove alias
+- **l**: List aliases
+- **q** or **Ctrl+C**: Quit
 
-After adding or removing aliases, you can reload them in your current shell:
+### TUI Features
+- **Visual selection**: Selected items are highlighted
+- **Alias suggestions**: Get smart suggestions based on your command history
+- **Multi-file support**: Manage aliases across multiple files
+
+## Command Line Options
+
+### Output Options
+- `-c, --command <COMMAND>`: Command to associate with the alias (for `add` and `change`)
+- `-n, --num <N>`: Number of suggestions to display (for `get-suggestions`)
+- `--alias-file-path <PATH>`: Path to the alias file to use
+
+### Examples
 
 ```bash
-# Method 1: Use alman reload command
-eval "$(alman reload)"
+# Add an alias to a specific file
+alman --alias-file-path ~/.bash_aliases add -c "ls -lh" lh
 
-# Method 2: Call the function directly
-alman_source_aliases
+# Get 10 suggestions
+alman get-suggestions -n 10
 ```
 
-## Configuration
+## Output Format
 
-Alman stores its data in `~/.alman/`:
+Alman displays aliases in a clear, tabular format:
 
-- `~/.alman/command_database.json` - Command history and analytics
-- `~/.alman/deleted_commands.json` - Commands to ignore
-- `~/.alman/config.json` - Application configuration
-- `~/.alman/aliases` - Default alias file
+```
+┌─────────┬───────────────┐
+│ ALIAS   │ COMMAND       │
+├─────────┼───────────────┤
+│ gs      │ git status    │
+│ ll      │ ls -la        │
+└─────────┴───────────────┘
+```
 
-### Multiple Alias Files
+## Use Cases
 
-You can manage aliases across multiple files:
+Perfect for managing your shell aliases, discovering new shortcuts, and keeping your workflow efficient:
 
 ```bash
-# Add a new alias file to the configuration
-alman --alias-file-path ~/.my-aliases add -c "git status" gs
+# Quick alias management
+alman tui
 
-# This will:
-# 1. Add ~/.my-aliases to the config
-# 2. Make it the default alias file
-# 3. Source it automatically in your shell
+# Add and remove aliases on the fly
+alman add -c "git pull" gp
+alman remove gp
+
+# Get suggestions for new aliases
+alman get-suggestions -n 5
 ```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see LICENSE file for details.
+
+## Uninstall
+
+To uninstall `alman`, you can run the command:
+
+```bash
+curl -sSfL https://raw.githubusercontent.com/vaibhav-mattoo/alman/main/uninstall.sh | sh
+```
+
+If you installed the software using a package manager, remove it using the package manager's uninstall command.
 
 ---
