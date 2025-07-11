@@ -15,13 +15,13 @@ impl ShellOpts {
             .to_string();
         
         let data_dir = crate::database::persistence::get_data_directory()
-            .unwrap_or_else(|_| PathBuf::from("/tmp/app"))
+            .unwrap_or_else(|_| PathBuf::from(".").join(".alias_suggestor"))
             .to_string_lossy()
             .to_string();
         
         let alias_file_path = crate::database::persistence::load_config()
             .and_then(|cfg| cfg.alias_file_paths.first().cloned())
-            .unwrap_or_else(|| "/home/fuckotheclown/repos/projects/app/store.aliases".to_string());
+            .unwrap_or_else(|| crate::database::persistence::get_default_alias_file_path());
         
         Self {
             app_path,

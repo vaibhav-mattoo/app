@@ -64,9 +64,9 @@ fn main() {
         // Load config and get default alias file path
         let default_path = {
             if let Some(cfg) = crate::database::persistence::load_config() {
-                cfg.alias_file_paths.first().map(|p| to_absolute_path(p)).unwrap_or_else(|| "/home/fuckotheclown/repos/projects/app/store.aliases".to_string())
+                cfg.alias_file_paths.first().map(|p| to_absolute_path(p)).unwrap_or_else(|| crate::database::persistence::get_default_alias_file_path())
             } else {
-                "/home/fuckotheclown/repos/projects/app/store.aliases".to_string()
+                crate::database::persistence::get_default_alias_file_path()
             }
         };
         println!("Current default alias file path: {}\n", default_path.green());
@@ -86,7 +86,7 @@ fn main() {
     let mut alias_file_paths = if let Some(cfg) = &config {
         cfg.alias_file_paths.clone()
     } else {
-        vec!["/home/fuckotheclown/repos/projects/app/store.aliases".to_string()]
+        vec![crate::database::persistence::get_default_alias_file_path()]
     };
 
     // Parse CLI args
@@ -95,7 +95,7 @@ fn main() {
     // If no arguments (just the binary name), launch TUI by default
     if command_strings.len() == 1 {
         // Use the first alias file path for TUI
-        let file_path = alias_file_paths.first().unwrap_or(&"/home/fuckotheclown/repos/projects/app/store.aliases".to_string()).clone();
+        let file_path = alias_file_paths.first().unwrap_or(&crate::database::persistence::get_default_alias_file_path()).clone();
         if let Err(e) = run_tui(std::path::PathBuf::from(file_path), alias_file_paths) {
             eprintln!("{}", format!("TUI error: {}", e).red());
         }
@@ -271,7 +271,7 @@ fn main() {
                         return;
                     }
                 }
-                let list = get_suggestions::get_suggestions_with_aliases(*num, db_ref, alias_file_paths.first().unwrap_or(&"/home/fuckotheclown/repos/projects/app/store.aliases".to_string()));
+                let list = get_suggestions::get_suggestions_with_aliases(*num, db_ref, alias_file_paths.first().unwrap_or(&crate::database::persistence::get_default_alias_file_path()));
                 
                 if list.is_empty() {
                     println!("{}", "No suggestions found.".yellow());
@@ -331,7 +331,7 @@ fn main() {
             }
             Some(Operation::Tui) => {
                 let tui_path = cli.alias_file_path.clone().unwrap_or_else(|| {
-                    alias_file_paths.first().unwrap_or(&"/home/fuckotheclown/repos/projects/app/store.aliases".to_string()).into()
+                    alias_file_paths.first().unwrap_or(&crate::database::persistence::get_default_alias_file_path()).into()
                 });
                 if let Err(e) = run_tui(tui_path, alias_file_paths) {
                     eprintln!("{}", format!("TUI error: {}", e).red());

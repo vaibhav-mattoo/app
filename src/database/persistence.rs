@@ -104,4 +104,9 @@ pub fn get_data_directory() -> Result<std::path::PathBuf, Box<dyn std::error::Er
     }
     
     Ok(data_dir)
+}
+
+pub fn get_default_alias_file_path() -> String {
+    let home_dir = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    home_dir.join(".alias_suggestor").join("aliases").to_string_lossy().to_string()
 } 
