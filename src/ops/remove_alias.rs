@@ -10,8 +10,6 @@ pub fn remove_alias(deleted_commands: &mut DeletedCommands, file_path: &str, ali
     if let Some((_, command)) = list.iter().find(|(a, _)| a == alias) {
         // remove the command from deleted commands
         deleted_commands.deleted_commands.remove(command);
-    } else {
-        println!("Alias '{}' not found in deleted commands.", alias);
     }
 
     // then remove from the file.

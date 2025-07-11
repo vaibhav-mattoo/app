@@ -104,8 +104,8 @@ fn run_app<B: Backend>(
     deleted_commands_path: &str,
 ) -> io::Result<()> {
     loop {
-        // Clear the screen before drawing to prevent overlap issues
-        terminal.clear()?;
+        // Remove the full screen clear to prevent flicker
+        // terminal.clear()?;
         terminal.draw(|f| render_ui(f, app))?;
 
         if let Event::Key(key) = event::read()? {

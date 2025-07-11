@@ -30,7 +30,7 @@ pub fn load_config() -> Option<AppConfig> {
 
 pub fn get_config_path() -> String {
     let home_dir = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-    home_dir.join(".alias_suggestor").join(CONFIG_FILE).to_string_lossy().to_string()
+    home_dir.join(".alman").join(CONFIG_FILE).to_string_lossy().to_string()
 }
 
 pub fn save_database(db: &Database, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -76,17 +76,17 @@ pub fn load_deleted_commands(file_path: &str) -> Result<DeletedCommands, Box<dyn
 
 pub fn get_database_path() -> String {
     let home_dir = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-    home_dir.join(".alias_suggestor").join(DB_FILE).to_string_lossy().to_string()
+    home_dir.join(".alman").join(DB_FILE).to_string_lossy().to_string()
 }
 
 pub fn get_deleted_commands_path() -> String {
     let home_dir = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-    home_dir.join(".alias_suggestor").join(DELETED_COMMANDS_FILE).to_string_lossy().to_string()
+    home_dir.join(".alman").join(DELETED_COMMANDS_FILE).to_string_lossy().to_string()
 }
 
 pub fn ensure_data_directory() -> Result<(), Box<dyn std::error::Error>> {
     let home_dir = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-    let data_dir = home_dir.join(".alias_suggestor");
+    let data_dir = home_dir.join(".alman");
     
     if !data_dir.exists() {
         fs::create_dir_all(&data_dir)?;
@@ -97,7 +97,7 @@ pub fn ensure_data_directory() -> Result<(), Box<dyn std::error::Error>> {
 
 pub fn get_data_directory() -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
     let home_dir = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-    let data_dir = home_dir.join(".alias_suggestor");
+    let data_dir = home_dir.join(".alman");
     
     if !data_dir.exists() {
         fs::create_dir_all(&data_dir)?;
@@ -108,5 +108,5 @@ pub fn get_data_directory() -> Result<std::path::PathBuf, Box<dyn std::error::Er
 
 pub fn get_default_alias_file_path() -> String {
     let home_dir = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
-    home_dir.join(".alias_suggestor").join("aliases").to_string_lossy().to_string()
+    home_dir.join(".alman").join("aliases").to_string_lossy().to_string()
 } 

@@ -14,11 +14,6 @@ pub struct DeletedCommands {
     pub deleted_commands: BTreeSet<String>,
 }
 
-// #[derive(Debug)]
-// pub struct Suggestions {
-//     pub alias_suggestion: Vec<String>,
-// }
-
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Command {
     pub score: i32,

@@ -17,7 +17,7 @@ pub fn render(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
         AppMode::ChangeAliasStep1 => render_change_alias_step1(f, app, area),
         AppMode::ChangeAliasStep2 => render_change_alias_step2(f, app, area),
         AppMode::ListAliases => render_list_aliases(f, app, area),
-        AppMode::CommandDetails => render_command_details(f, app, area),
+
         _ => render_default_input(f, app, area),
     }
 }
@@ -481,90 +481,4 @@ fn render_list_aliases(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     f.render_widget(controls, chunks[2]);
 }
 
-fn render_command_details(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
-    if let Some(cmd) = &app.selected_command_details {
-        let chunks = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Length(8), // Command details
-                Constraint::Length(3), // Buttons
-            ])
-            .split(area);
 
-        // Command details
-        let details_lines = vec![
-            Line::from(vec![
-                Span::styled("Command: ", Style::default().fg(Color::Cyan)),
-                Span::styled(&cmd.command_text, Style::default().fg(Color::Yellow)),
-            ]),
-            Line::from(vec![
-                Span::styled("Score: ", Style::default().fg(Color::Cyan)),
-                Span::styled(cmd.score.to_string(), Style::default().fg(Color::Green)),
-            ]),
-            Line::from(vec![
-                Span::styled("Frequency: ", Style::default().fg(Color::Cyan)),
-                Span::styled(cmd.frequency.to_string(), Style::default().fg(Color::Blue)),
-            ]),
-            Line::from(vec![
-                Span::styled("Last Used: ", Style::default().fg(Color::Cyan)),
-                Span::styled(app.format_last_access_time(cmd.last_access_time), Style::default().fg(Color::Magenta)),
-            ]),
-        ];
-
-        let details = Paragraph::new(details_lines)
-            .block(Block::default().borders(Borders::ALL).title("Command Details"))
-            .style(Style::default().fg(Color::White));
-
-        f.render_widget(details, chunks[0]);
-
-        // Buttons
-        let button_chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(33),
-                Constraint::Percentage(33),
-                Constraint::Percentage(34),
-            ])
-            .split(chunks[1]);
-
-        let add_alias_style = if app.command_details_selection == 0 {
-            Style::default().fg(Color::White).bg(Color::DarkGray)
-        } else {
-            Style::default().fg(Color::Green)
-        };
-
-        let delete_style = if app.command_details_selection == 1 {
-            Style::default().fg(Color::White).bg(Color::DarkGray)
-        } else {
-            Style::default().fg(Color::Red)
-        };
-
-        let back_style = if app.command_details_selection == 2 {
-            Style::default().fg(Color::White).bg(Color::DarkGray)
-        } else {
-            Style::default().fg(Color::Yellow)
-        };
-
-        let add_alias_btn = Paragraph::new("Add Alias")
-            .style(add_alias_style)
-            .block(Block::default().borders(Borders::ALL));
-        f.render_widget(add_alias_btn, button_chunks[0]);
-
-        let delete_btn = Paragraph::new("Delete Suggestion")
-            .style(delete_style)
-            .block(Block::default().borders(Borders::ALL));
-        f.render_widget(delete_btn, button_chunks[1]);
-
-        let back_btn = Paragraph::new("Back")
-            .style(back_style)
-            .block(Block::default().borders(Borders::ALL));
-        f.render_widget(back_btn, button_chunks[2]);
-    } else {
-        // Fallback: render a message so the main area is never blank
-        let details = Paragraph::new("No command selected.")
-            .block(Block::default().borders(Borders::ALL).title("Command Details"))
-            .alignment(Alignment::Center)
-            .style(Style::default().fg(Color::Red));
-        f.render_widget(details, area);
-    }
-}
