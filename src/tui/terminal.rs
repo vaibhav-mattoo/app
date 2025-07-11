@@ -225,8 +225,5 @@ fn handle_operation(
             // Init is not available in TUI mode
             app.status_message = "Init command not available in TUI mode".to_string();
         }
-        Operation::Reload => {
-            app.status_message = "Use 'alman_source_aliases' to reload aliases in your shell".to_string();
-        }
     }
 }

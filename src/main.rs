@@ -342,10 +342,6 @@ fn main() {
                 let init_script = render_shell_init(shell.clone(), &opts);
                 println!("{}", init_script);
             }
-            Some(Operation::Reload) => {
-                // Output a command to reload aliases in the current shell
-                println!("alman_source_aliases");
-            }
             None => {}
         }
     }
