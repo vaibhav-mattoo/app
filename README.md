@@ -11,6 +11,7 @@ A powerful command-line tool and TUI for managing shell aliases with intelligent
 - 🔄 **Multi-Shell Support**: Works with bash, zsh, fish, and POSIX shells
 - 📁 **Multiple Alias Files**: Manage aliases across multiple files
 - 🎨 **Colored Output**: Beautiful colored CLI output for better readability
+- 🔄 **Automatic Alias Loading**: Aliases are automatically sourced in your shell
 
 ## Installation
 
@@ -40,6 +41,11 @@ eval "$(./target/release/alman init zsh)"
 eval "$(./target/release/alman init posix)"
 ```
 
+**What this does:**
+- Sets up command tracking for intelligent suggestions
+- Automatically sources all your alias files on shell startup
+- Provides `alman_source_aliases` function to reload aliases when they change
+
 ## Usage
 
 ### Command Line Interface
@@ -68,6 +74,9 @@ alman delete-suggestion gs
 
 # Initialize shell integration
 alman init bash
+
+# Reload aliases in current shell (after adding/removing aliases)
+alman reload
 ```
 
 ### TUI Controls
@@ -80,6 +89,18 @@ alman init bash
 - **List Aliases**: `l`
 - **Quit**: `q` or `Ctrl+C`
 
+### Working with Aliases
+
+After adding or removing aliases, you can reload them in your current shell:
+
+```bash
+# Method 1: Use alman reload command
+eval "$(alman reload)"
+
+# Method 2: Call the function directly
+alman_source_aliases
+```
+
 ## Configuration
 
 Alman stores its data in `~/.alman/`:
@@ -88,6 +109,20 @@ Alman stores its data in `~/.alman/`:
 - `~/.alman/deleted_commands.json` - Commands to ignore
 - `~/.alman/config.json` - Application configuration
 - `~/.alman/aliases` - Default alias file
+
+### Multiple Alias Files
+
+You can manage aliases across multiple files:
+
+```bash
+# Add a new alias file to the configuration
+alman --alias-file-path ~/.my-aliases add -c "git status" gs
+
+# This will:
+# 1. Add ~/.my-aliases to the config
+# 2. Make it the default alias file
+# 3. Source it automatically in your shell
+```
 
 ## Contributing
 

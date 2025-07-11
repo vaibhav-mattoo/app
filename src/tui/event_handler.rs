@@ -15,6 +15,60 @@ impl App {
             }
         }
 
+        if self.show_command_details_popup {
+            match key {
+                KeyCode::Left => {
+                    if self.command_details_selection > 0 {
+                        self.command_details_selection -= 1;
+                    }
+                    return None;
+                }
+                KeyCode::Right => {
+                    if self.command_details_selection < 2 {
+                        self.command_details_selection += 1;
+                    }
+                    return None;
+                }
+                KeyCode::Enter => {
+                    match self.command_details_selection {
+                        0 => { // Add Alias
+                            if let Some(cmd) = &self.selected_command_details {
+                                self.selected_command = Some(cmd.command_text.clone());
+                                self.input = cmd.command_text.clone();
+                                self.cursor_position = self.input.len();
+                                self.set_mode(AppMode::AddAliasStep2);
+                                self.generate_alias_suggestions();
+                                self.status_message = "Enter alias name for the selected command:".to_string();
+                            }
+                            self.show_command_details_popup = false;
+                        }
+                        1 => { // Delete Suggestion
+                            if let Some(cmd) = &self.selected_command_details {
+                                return Some(Operation::DeleteSuggestion { alias: cmd.command_text.clone() });
+                            }
+                            self.show_command_details_popup = false;
+                        }
+                        2 => { // Back
+                            self.show_command_details_popup = false;
+                            self.selected_command_details = None;
+                            self.command_details_selection = 0;
+                            self.status_message = "Returned to main menu.".to_string();
+                        }
+                        _ => {}
+                    }
+                    return None;
+                }
+                KeyCode::Esc => {
+                    self.show_command_details_popup = false;
+                    self.selected_command_details = None;
+                    self.command_details_selection = 0;
+                    self.status_message = "Returned to main menu.".to_string();
+                    return None;
+                }
+                _ => return None,
+            }
+        }
+
         match self.mode {
             AppMode::Main => self.handle_main_mode(key),
             AppMode::AddAliasStep1 => self.handle_add_alias_step1(key),

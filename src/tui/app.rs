@@ -53,6 +53,7 @@ pub struct App {
     pub selected_command_details: Option<Command>, // for command details popup
     pub command_details_selection: usize, // 0=Add Alias, 1=Delete Suggestion, 2=Back
     pub show_command_details_popup: bool,
+    pub config_changed: bool,
 }
 
 impl App {
@@ -101,6 +102,7 @@ impl App {
             selected_command_details: None,
             command_details_selection: 0,
             show_command_details_popup: false,
+            config_changed: false,
         }
     }
 

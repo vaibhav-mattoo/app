@@ -88,11 +88,24 @@ pub fn run_tui(alias_file_path: PathBuf, alias_file_paths: Vec<String>) -> Resul
         &deleted_commands_path,
     );
 
-    if let Err(err) = res {
-        eprintln!("TUI error: {:?}", err);
-    }
+    // Drop the terminal guard to restore the main screen
+    drop(terminal_guard);
 
-    Ok(())
+    // Now print the message
+    let shell_path = std::env::var("SHELL").unwrap_or_default();
+    let shell_file = if shell_path.contains("zsh") {
+        "~/.zshrc"
+    } else if shell_path.contains("bash") {
+        "~/.bashrc"
+    } else if shell_path.contains("fish") {
+        "~/.config/fish/config.fish"
+    } else {
+        "your shell's config file"
+    };
+    // ANSI green: \x1b[32m ... \x1b[0m
+    println!("\nTo use your new aliases immediately, run: \x1b[32msource {}\x1b[0m", shell_file);
+
+    Ok(res?)
 }
 
 fn run_app<B: Backend>(
@@ -146,6 +159,8 @@ fn handle_operation(
             if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
                 eprintln!("Failed to save deleted commands: {}", e);
             }
+            app.load_commands(database);
+            app.config_changed = true;
         }
         Operation::Remove { alias } => {
             use crate::ops::alias_ops::remove_alias_from_multiple_files;
@@ -158,21 +173,22 @@ fn handle_operation(
             if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
                 eprintln!("Failed to save deleted commands: {}", e);
             }
+            app.config_changed = true;
         }
         Operation::Change { old_alias, new_alias, command } => {
-            // First remove the old alias
             use crate::ops::alias_ops::remove_alias_from_multiple_files;
-            remove_alias_from_multiple_files(&app.alias_file_paths, &old_alias);
+            use crate::ops::alias_ops::add_alias_to_multiple_files;
+            // First remove the old alias
+            remove_alias_from_multiple_files(&app.alias_file_paths, old_alias.as_str());
             if let Some(first_path) = app.alias_file_paths.first() {
-                remove_alias::remove_alias(deleted_commands, first_path, &old_alias);
+                remove_alias::remove_alias(deleted_commands, first_path, old_alias.as_str());
             }
             // Then add the new alias with the provided command
-            use crate::ops::alias_ops::add_alias_to_multiple_files;
-            add_alias_to_multiple_files(&app.alias_file_paths, &new_alias, &command);
+            add_alias_to_multiple_files(&app.alias_file_paths, new_alias.as_str(), command.as_str());
             if let Some(first_path) = app.alias_file_paths.first() {
-                add_alias::add_alias(database, deleted_commands, first_path, &new_alias, &command);
+                add_alias::add_alias(database, deleted_commands, first_path, new_alias.as_str(), command.as_str());
             }
-            app.status_message = format!("Changed alias: {} = {} → {} = {}", old_alias, command, new_alias, command);
+            app.status_message = format!("Changed alias: {} -> {}", old_alias, new_alias);
             // Save after changing alias
             if let Err(e) = save_database(database, db_path) {
                 eprintln!("Failed to save database: {}", e);
@@ -180,6 +196,7 @@ fn handle_operation(
             if let Err(e) = save_deleted_commands(deleted_commands, deleted_commands_path) {
                 eprintln!("Failed to save deleted commands: {}", e);
             }
+            app.config_changed = true;
         }
         Operation::List => {
             // List operation is now handled in the TUI as a separate mode
@@ -207,6 +224,9 @@ fn handle_operation(
         Operation::Init { .. } => {
             // Init is not available in TUI mode
             app.status_message = "Init command not available in TUI mode".to_string();
+        }
+        Operation::Reload => {
+            app.status_message = "Use 'alman_source_aliases' to reload aliases in your shell".to_string();
         }
     }
 }
