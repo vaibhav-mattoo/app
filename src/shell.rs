@@ -71,13 +71,9 @@ fn render_bash(opts: &ShellOpts) -> String {
     script.push_str("    fi\n");
     script.push_str("}\n\n");
     
-    script.push_str("if [ -n \"$BASH_VERSION\" ]; then\n");
-    script.push_str("    # For bash, we need to use PROMPT_COMMAND\n");
-    script.push_str("    if [ -n \"$PROMPT_COMMAND\" ]; then\n");
-    script.push_str("        PROMPT_COMMAND=\"alman_preexec \\$?; $PROMPT_COMMAND\"\n");
-    script.push_str("    else\n");
-    script.push_str("        PROMPT_COMMAND=\"alman_preexec \\$?\"\n");
-    script.push_str("    fi\n");
+    // Use DEBUG trap for pre-execution hook
+    script.push_str("if [ -n \"$BASH_VERSION\" ] && [ -n \"$PS1\" ]; then\n");  // Limit to interactive shells
+    script.push_str("    trap 'alman_preexec \"$BASH_COMMAND\"' DEBUG\n");
     script.push_str("fi\n\n");
     
     script.push_str("# Source aliases on shell startup\n");
@@ -85,6 +81,7 @@ fn render_bash(opts: &ShellOpts) -> String {
     
     script
 }
+
 
 fn render_zsh(opts: &ShellOpts) -> String {
     let mut script = String::new();
