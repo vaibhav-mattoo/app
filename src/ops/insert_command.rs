@@ -12,10 +12,19 @@ pub fn insert_command(command_str: String, db: &mut Database, deleted_commands: 
     if command_parts.is_empty() {
         return; // Do not insert commands with no words
     }
-    if command_parts[0] == "app" { // change later to app name later.
-        return;
+    
+    // Skip commands that start with the current binary name
+    let binary_name = std::env::args()
+        .next()
+        .and_then(|path| std::path::Path::new(&path).file_name().map(|f| f.to_os_string()))
+        .and_then(|os_str| os_str.into_string().ok());
+    if let Some(name) = binary_name {
+        if command_parts[0] == name {
+            return;
+        }
     }
-    // maintain a stirng called temp, which stores command so far and then we do a for loop
+    
+    // maintain a string called temp, which stores command so far and then we do a for loop
     let mut temp = String::new();
     for word in command_parts.iter() {
         if !temp.is_empty() {
@@ -26,6 +35,5 @@ pub fn insert_command(command_str: String, db: &mut Database, deleted_commands: 
         // Insert the current command prefix into the database
         db.add_command(tempp, deleted_commands);
     }
-    // println!("hmm: {}", command_str);
     db.add_command(command_str, deleted_commands);
 }

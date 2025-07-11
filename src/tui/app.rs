@@ -13,9 +13,7 @@ pub enum AppMode {
     RemoveAliasConfirmation,
     ChangeAliasStep1,
     ChangeAliasStep2,
-    ChangeAlias,
     ListAliases,
-    CommandDetails,
 }
 
 #[derive(Debug)]
@@ -59,39 +57,47 @@ pub struct App {
 
 impl App {
     pub fn new(alias_file_path: PathBuf, alias_file_paths: Vec<String>) -> Self {
-        Self {
+        let mut list_state = ListState::default();
+        list_state.select(Some(0));
+        let mut alias_suggestions_state = ListState::default();
+        alias_suggestions_state.select(Some(0));
+        let mut change_alias_suggestions_state = ListState::default();
+        change_alias_suggestions_state.select(Some(0));
+        let mut list_aliases_state = ListState::default();
+        list_aliases_state.select(Some(0));
+        App {
             mode: AppMode::Main,
             input: String::new(),
             cursor_position: 0,
-            list_state: ListState::default(),
+            list_state,
             commands: Vec::new(),
             filtered_commands: Vec::new(),
             alias_file_path,
             alias_file_paths,
             should_quit: false,
-            status_message: "Welcome to App TUI!".to_string(),
+            status_message: "Welcome to Alman TUI!".to_string(),
             show_popup: false,
             popup_message: String::new(),
             selected_command: None,
             alias_input: String::new(),
             alias_cursor_position: 0,
             alias_suggestions: Vec::new(),
-            alias_suggestions_state: ListState::default(),
+            alias_suggestions_state,
             confirmation_alias: None,
             confirmation_command: None,
-            confirmation_selection: false,
+            confirmation_selection: true,
             remove_confirmation_alias: None,
             remove_confirmation_command: None,
-            remove_confirmation_selection: false,
+            remove_confirmation_selection: true,
             change_old_alias: None,
             change_old_command: None,
             change_new_alias: String::new(),
             change_new_alias_cursor_position: 0,
             change_alias_suggestions: Vec::new(),
-            change_alias_suggestions_state: ListState::default(),
+            change_alias_suggestions_state,
             aliases: Vec::new(),
             filtered_aliases: Vec::new(),
-            list_aliases_state: ListState::default(),
+            list_aliases_state,
             selected_command_details: None,
             command_details_selection: 0,
             show_command_details_popup: false,
@@ -100,7 +106,7 @@ impl App {
 
     pub fn load_commands(&mut self, database: &mut Database) {
         self.commands = database
-            .get_top_commands(None)
+            .get_top_commands(Some(20))
             .iter()
             .map(|cmd| (*cmd).clone())
             .collect();
@@ -277,11 +283,5 @@ impl App {
         dt.format("%m/%d/%Y %H:%M:%S").to_string()
     }
 
-    pub fn show_command_details_popup(&mut self) {
-        self.show_command_details_popup = true;
-    }
 
-    pub fn hide_command_details_popup(&mut self) {
-        self.show_command_details_popup = false;
-    }
 }

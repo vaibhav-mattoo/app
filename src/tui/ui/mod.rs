@@ -22,7 +22,7 @@ pub fn render_ui(f: &mut Frame, app: &App) {
         .split(f.area());
 
     // Header
-    let header = Paragraph::new("Alias Manager TUI")
+    let header = Paragraph::new("Alman TUI")
         .style(
             Style::default()
                 .fg(Color::Cyan)

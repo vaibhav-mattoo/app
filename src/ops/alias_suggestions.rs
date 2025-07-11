@@ -119,7 +119,7 @@ impl AliasSuggester {
         let tool = parts[0];
         let args = &parts[1..];
 
-        // Handle relative path commands (e.g., ./target/debug/app)
+        // Handle relative path commands (e.g., ./target/debug/alman)
         if tool.starts_with("./") || tool.starts_with("../") {
             suggestions.extend(self.generate_relative_path_aliases(command, tool, args));
             return suggestions;
@@ -569,10 +569,7 @@ impl AliasSuggester {
         suggestions
     }
 
-    pub fn debug_system_commands(&self) {
-        println!("System commands detected: {:?}", self.system_commands);
-        println!("Existing aliases: {:?}", self.existing_aliases);
-    }
+
 
     fn has_conflicts(&self, alias: &str) -> bool {
         // Check if alias already exists in our alias files

@@ -15,11 +15,11 @@ pub fn get_aliases(file_path: &str) -> Vec<(String, String)> {
             // File doesn't exist, create it
             match File::create(file_path) {
                 Ok(_) => {
-                    println!("Created new alias file: {}", file_path);
+                    // Created new alias file
                     return Vec::new();
                 }
-                Err(e) => {
-                    eprintln!("Could not create alias file {}: {}", file_path, e);
+                Err(_) => {
+                    // Could not create alias file
                     return Vec::new();
                 }
             }
@@ -32,8 +32,7 @@ pub fn get_aliases(file_path: &str) -> Vec<(String, String)> {
     for line in reader.lines() {
         let line = match line {
             Ok(line) => line,
-            Err(e) => {
-                eprintln!("Error reading line from alias file: {}", e);
+            Err(_) => {
                 continue;
             }
         };
@@ -51,11 +50,10 @@ pub fn get_aliases(file_path: &str) -> Vec<(String, String)> {
                 let command = command.to_string();
                 aliases.push((alias, command));
             } else {
-                eprintln!("Invalid alias format in line: {}", line);
+                // Invalid alias format
             }
         }
     }
-
     aliases
 }
 
@@ -68,16 +66,10 @@ pub fn write_aliases(file_path: &str, aliases: Vec<(String, String)>) {
     file.flush().expect("Could not flush alias file");
 }
 
-pub fn get_aliases_list (file_path: &str) -> Vec<(String, String)> {
-    let aliases = get_aliases(file_path);
-    aliases
-}
-
 pub fn add_alias_to_file(file_path: &str, alias: &str, command: &str) {
     let mut aliases = get_aliases (file_path);
     // Check if alias already exists, just the alias part
     if aliases.iter().any(|(a, _)| a == alias) {
-        println!("Alias '{}' already exists.", alias);
         return;
     }
     // Add new alias
@@ -91,8 +83,6 @@ pub fn remove_alias_from_file(file_path: &str, alias: &str) {
     if let Some(pos) = aliases.iter().position(|(a, _)| a == alias) {
         aliases.remove(pos);
         write_aliases(file_path, aliases);
-    } else {
-        println!("Alias '{}' not found.", alias);
     }
 }
 
@@ -111,14 +101,12 @@ pub fn add_alias_to_multiple_files(file_paths: &[String], alias: &str, command: 
     // Check if alias exists in any file
     let all_aliases = get_aliases_from_multiple_files(file_paths);
     if all_aliases.iter().any(|(a, _)| a == alias) {
-        println!("Alias '{}' already exists in one of the alias files.", alias);
         return;
     }
     
     // Add to the first file (primary alias file)
     if let Some(primary_file) = file_paths.first() {
         add_alias_to_file(primary_file, alias, command);
-        println!("Added alias '{}' to {}", alias, primary_file);
     }
 }
 
@@ -130,13 +118,12 @@ pub fn remove_alias_from_multiple_files(file_paths: &[String], alias: &str) {
         if let Some(pos) = aliases.iter().position(|(a, _)| a == alias) {
             aliases.remove(pos);
             write_aliases(file_path, aliases);
-            println!("Removed alias '{}' from {}", alias, file_path);
             found = true;
             break; // Remove from first file where found
         }
     }
     
     if !found {
-        println!("Alias '{}' not found in any alias file.", alias);
+        return;
     }
 }
